@@ -39,16 +39,36 @@ import {
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(true);
 
   // Navigation items based on your modules
   const navigationItems = [
-    { onloggedIn:false , title: "Home", href: "/", icon: FiHome },
-    { onloggedIn:true , title: "Marketplace", href: "/marketplace", icon: FiShoppingCart },
-    { onloggedIn:true , title: "My Listings", href: "/my-listings", icon: FiPackage },
-    { onloggedIn:true , title: "Orders", href: "/orders", icon: FiDollarSign },
-    { onloggedIn:false , title: "Analytics", href: "/analytics", icon: FiTrendingUp },
-    { onloggedIn:false , title: "Community", href: "/community", icon: FiUsers },
+    { onloggedIn: false, title: "Home", href: "/", icon: FiHome },
+    {
+      onloggedIn: false,
+      title: "Marketplace",
+      href: "/marketplace",
+      icon: FiShoppingCart,
+    },
+    {
+      onloggedIn: true,
+      title: "My Listings",
+      href: "/my-listings",
+      icon: FiPackage,
+    },
+    { onloggedIn: true, title: "Orders", href: "/orders", icon: FiDollarSign },
+    {
+      onloggedIn: true,
+      title: "Analytics",
+      href: "/analytics",
+      icon: FiTrendingUp,
+    },
+    {
+      onloggedIn: false,
+      title: "Community",
+      href: "/community",
+      icon: FiUsers,
+    },
   ];
 
   return (
@@ -66,19 +86,20 @@ const Header = () => {
             </span>
           </div>
         </Link>
-
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          {navigationItems.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className="flex items-center space-x-1 text-sm font-medium text-gray-600 hover:text-green-600 transition-colors"
-            >
-              <item.icon className="h-4 w-4" />
-              <span>{item.title}</span>
-            </Link>
-          ))}
+          {navigationItems
+            .filter((item) => (loggedIn ? true : !item.onloggedIn))
+            .map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className="flex items-center space-x-1 text-sm font-medium text-gray-600 hover:text-green-600 transition-colors"
+              >
+                <item.icon className="h-4 w-4" />
+                <span>{item.title}</span>
+              </Link>
+            ))}
         </nav>
 
         {/* Right Side Actions */}
@@ -95,7 +116,7 @@ const Header = () => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="hidden md:inline-flex relative"
+                className="inline-flex relative"
               >
                 <FiBell className="h-4 w-4" />
                 <Badge
@@ -174,7 +195,7 @@ const Header = () => {
                 <span className="sr-only">Menu</span>
               </Button>
             </SheetTrigger>
-            <SheetContent side="right" className="w-[280px]">
+            <SheetContent side="right" className="w-[290px] px-2">
               <SheetHeader>
                 <SheetTitle className="flex items-center space-x-2 text-left">
                   <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-600">
@@ -193,71 +214,20 @@ const Header = () => {
 
                 {/* Mobile Navigation */}
                 <nav className="flex flex-col space-y-2">
-                  {navigationItems.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setIsOpen(false)}
-                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors"
-                    >
-                      <item.icon className="h-4 w-4" />
-                      <span className="font-medium">{item.title}</span>
-                    </Link>
-                  ))}
+                  {navigationItems
+                    .filter((item) => (loggedIn ? true : !item.onloggedIn))
+                    .map((item) => (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        onClick={() => setIsOpen(false)}
+                        className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors"
+                      >
+                        <item.icon className="h-4 w-4" />
+                        <span className="font-medium">{item.title}</span>
+                      </Link>
+                    ))}
                 </nav>
-
-                {/* Mobile User Actions */}
-                {
-                  loggedIn ? (<div className="pt-4 border-t">
-                  <div className="flex items-center space-x-3 px-3 py-2 mb-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-green-100 text-green-700 text-sm">
-                        FM
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium">Farmer Name</span>
-                      <span className="text-xs text-gray-500">
-                        View Profile
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col space-y-1">
-                    <Button
-                      variant="ghost"
-                      className="justify-start px-3 py-2 h-auto"
-                    >
-                      <FiDollarSign className="mr-2 h-4 w-4" />
-                      <span className="text-sm">Wallet & Payments</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="justify-start px-3 py-2 h-auto"
-                    >
-                      <FiBell className="mr-2 h-4 w-4" />
-                      <span className="text-sm">Notifications</span>
-                      <Badge variant="destructive" className="ml-auto">
-                        2
-                      </Badge>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="justify-start px-3 py-2 h-auto"
-                    >
-                      <FiSettings className="mr-2 h-4 w-4" />
-                      <span className="text-sm">Settings</span>
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      className="justify-start px-3 py-2 h-auto text-red-600"
-                    >
-                      <FiLogOut className="mr-2 h-4 w-4" />
-                      <span className="text-sm">Logout</span>
-                    </Button>
-                  </div>
-                </div>) : ("")
-                }
               </div>
             </SheetContent>
           </Sheet>

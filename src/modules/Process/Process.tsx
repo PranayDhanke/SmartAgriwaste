@@ -1,187 +1,300 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Checkbox } from "@/components/ui/checkbox"
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
+import React, { FormEvent, InputEvent, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import ProductList from "@/../public/Products/Product.json";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Separator } from "@/components/ui/separator";
+
+import {
+  Leaf,
+  Recycle,
+  Target,
+  AlertTriangle,
+  FileText,
+  ChevronRight,
+} from "lucide-react";
+
+type WasteType = "crop" | "fruit" | "vegetable";
+
+interface WasteForm {
+  wasteType: WasteType | "";
+  wasteProduct: string;
+  quantity: string;
+  moisture: string;
+  currentMethod: string;
+  intendedUse: string;
+  contamination: string;
+  notes: string;
+}
 export default function Process() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<WasteForm>({
     wasteType: "",
+    wasteProduct: "",
     quantity: "",
     moisture: "",
     currentMethod: "",
     intendedUse: "",
-    resources: [] as string[],
     contamination: "no",
     notes: "",
-  })
+  });
 
-  const handleCheckboxChange = (value: string) => {
-    setFormData((prev) => {
-      if (prev.resources.includes(value)) {
-        return { ...prev, resources: prev.resources.filter((r) => r !== value) }
-      } else {
-        return { ...prev, resources: [...prev.resources, value] }
-      }
-    })
-  }
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    console.log("Form Data:", formData)
-    alert("Fetching waste management processes...")
-  }
+  
+  const handleFormSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    alert(formData);
+    setIsSubmitting(true);
+  };
 
   return (
-    <main className="min-h-screen bg-gray-50 px-6 py-12">
-      <div className="mx-auto max-w-3xl">
-        <Card className="shadow-md">
-          <CardHeader>
-            <CardTitle className="text-green-700 text-2xl">
-              Find Waste Management Processes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              
-              {/* Waste Type */}
-              <div className="space-y-2">
-                <Label>Type of Waste</Label>
-                <Select onValueChange={(value) => setFormData({ ...formData, wasteType: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select waste type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="crop">Crop residues (straw, husk, stalks, leaves)</SelectItem>
-                    <SelectItem value="fruitveg">Fruit & vegetable waste</SelectItem>
-                    <SelectItem value="manure">Animal manure</SelectItem>
-                    <SelectItem value="forestry">Agro-forestry waste (wood, sawdust, branches)</SelectItem>
-                    <SelectItem value="processing">Food processing/agro-industry waste</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+    <main className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b">
+        <div className="mx-auto max-w-4xl px-6 py-8">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-green-100 rounded-lg">
+              <Recycle className="h-8 w-8 text-green-600" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">
+                Smart Waste Management
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Find the best processing methods for your agricultural waste
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
 
-              {/* Quantity */}
-              <div className="space-y-2">
-                <Label>Quantity of Waste (Number + Unit)</Label>
-                <Input
-                  placeholder="e.g. 50 kg, 2 tons"
-                  value={formData.quantity}
-                  onChange={(e) => setFormData({ ...formData, quantity: e.target.value })}
-                />
-              </div>
+      <div className="mx-auto max-w-4xl px-6 py-10">
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Main Form */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-lg border-0 bg-white/90 backdrop-blur-sm">
+              <CardContent>
+                <form onSubmit={handleFormSubmit} className="space-y-8">
+                  {/* Waste Classification */}
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Leaf className="h-5 w-5 text-green-600" />
+                      <h3 className="font-semibold">Waste Classification</h3>
+                    </div>
+                    <div className="space-y-4">
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Type of Waste *</Label>
+                          <Select
+                            required
+                            onValueChange={(value: WasteType) =>
+                              setFormData({ ...formData, wasteType: value })
+                            }
+                          >
+                            <SelectTrigger className="h-12">
+                              <SelectValue placeholder="Select your waste type" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="crop">
+                                🌾 Crop residues
+                              </SelectItem>
+                              <SelectItem value="fruit">🥬 Fruit</SelectItem>
+                              <SelectItem value="vegetable">
+                                🥬 Vegetables
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Type of Product *</Label>
+                          <Select
+                            disabled={!formData.wasteType}
+                            required
+                            onValueChange={(value) =>
+                              setFormData({ ...formData, wasteProduct: value })
+                            }
+                          >
+                            <SelectTrigger className="h-12">
+                              <SelectValue placeholder="Select your waste product" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {formData.wasteType &&
+                                ProductList[formData.wasteType].map(
+                                  (item: string) => (
+                                    <SelectItem key={item} value={item}>
+                                      {item}
+                                    </SelectItem>
+                                  )
+                                )}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div className="space-y-2">
+                          <Label>Quantity *</Label>
+                          <Input
+                            required
+                            placeholder="e.g. 50 kg, 2 tons"
+                            value={formData.quantity}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                quantity: e.target.value,
+                              })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label>Moisture *</Label>
+                          <Select
+                            required
+                            onValueChange={(value) =>
+                              setFormData({ ...formData, moisture: value })
+                            }
+                          >
+                            <SelectTrigger className="h-12">
+                              <SelectValue placeholder="Select moisture" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="dry">☀️ Dry</SelectItem>
+                              <SelectItem value="semiwet">
+                                🌤️ Semi-wet
+                              </SelectItem>
+                              <SelectItem value="wet">💧 Wet</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    </div>
+                  </section>
 
-              {/* Moisture Condition */}
-              <div className="space-y-2">
-                <Label>Moisture Condition</Label>
-                <Select onValueChange={(value) => setFormData({ ...formData, moisture: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select moisture condition" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="dry">Dry</SelectItem>
-                    <SelectItem value="semiwet">Semi-wet</SelectItem>
-                    <SelectItem value="wet">Wet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Separator />
 
-              {/* Current Handling Method */}
-              <div className="space-y-2">
-                <Label>Current Handling Method (Optional)</Label>
-                <Select onValueChange={(value) => setFormData({ ...formData, currentMethod: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select current method" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="burning">Burning</SelectItem>
-                    <SelectItem value="dumping">Dumping</SelectItem>
-                    <SelectItem value="feeding">Feeding animals</SelectItem>
-                    <SelectItem value="none">No management yet</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  {/* Processing Preferences */}
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <Target className="h-5 w-5 text-blue-600" />
+                      <h3 className="font-semibold">Processing Preferences</h3>
+                    </div>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Current Handling</Label>
+                        <Select
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, currentMethod: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="How do you handle it?" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="burning">🔥 Burning</SelectItem>
+                            <SelectItem value="dumping">🗑️ Dumping</SelectItem>
+                            <SelectItem value="none">❓ None</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Intended Use *</Label>
+                        <Select
+                          required
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, intendedUse: value })
+                          }
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="What’s your goal?" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="compost">🌱 Compost</SelectItem>
+                            <SelectItem value="biogas">⚡ Biogas</SelectItem>
+                            <SelectItem value="feed">🐄 Animal feed</SelectItem>
+                            <SelectItem value="sell">💰 Sell</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </section>
 
-              {/* Intended Use */}
-              <div className="space-y-2">
-                <Label>Intended Use / Goal</Label>
-                <Select onValueChange={(value) => setFormData({ ...formData, intendedUse: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select intended use" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="compost">Compost / Fertilizer for soil</SelectItem>
-                    <SelectItem value="biogas">Biogas / Energy</SelectItem>
-                    <SelectItem value="feed">Animal feed</SelectItem>
-                    <SelectItem value="sell">Sell as raw material (biomass, fuel, etc.)</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
+                  <Separator />
 
-              {/* Resources / Facilities */}
-              <div className="space-y-2">
-                <Label>Available Resources / Facilities (Multi-select)</Label>
-                <div className="grid gap-2">
-                  {[
-                    "Compost pit / Vermicomposting unit",
-                    "Biogas plant nearby",
-                    "Access to biomass power plant",
-                    "Open field for mulching",
-                    "None",
-                  ].map((resource) => (
-                    <label key={resource} className="flex items-center gap-2">
-                      <Checkbox
-                        checked={formData.resources.includes(resource)}
-                        onCheckedChange={() => handleCheckboxChange(resource)}
-                      />
-                      <span>{resource}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
+                  {/* Safety */}
+                  <section>
+                    <div className="flex items-center gap-2 mb-4">
+                      <AlertTriangle className="h-5 w-5 text-red-500" />
+                      <h3 className="font-semibold">Safety Information</h3>
+                    </div>
+                    <RadioGroup
+                      value={formData.contamination}
+                      onValueChange={(value) =>
+                        setFormData({ ...formData, contamination: value })
+                      }
+                      className="flex gap-6"
+                    >
+                      <label className="flex items-center gap-2">
+                        <RadioGroupItem value="yes" /> Yes
+                      </label>
+                      <label className="flex items-center gap-2">
+                        <RadioGroupItem value="no" /> No
+                      </label>
+                    </RadioGroup>
+                  </section>
 
-              {/* Chemical Contamination */}
-              <div className="space-y-2">
-                <Label>Any Chemical Contamination?</Label>
-                <RadioGroup
-                  value={formData.contamination}
-                  onValueChange={(value) => setFormData({ ...formData, contamination: value })}
-                >
-                  <div className="flex items-center space-x-4">
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="yes" /> Yes
-                    </label>
-                    <label className="flex items-center gap-2">
-                      <RadioGroupItem value="no" /> No
-                    </label>
+                  {/* Notes */}
+                  <div className="space-y-2">
+                    <Label>Additional Notes</Label>
+                    <Textarea
+                      placeholder="Any constraints or details..."
+                      value={formData.notes}
+                      onChange={(e) =>
+                        setFormData({ ...formData, notes: e.target.value })
+                      }
+                    />
                   </div>
-                </RadioGroup>
-              </div>
 
-              {/* Notes */}
-              <div className="space-y-2">
-                <Label>Additional Notes (optional)</Label>
-                <Textarea
-                  placeholder="Any extra details..."
-                  value={formData.notes}
-                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-                />
-              </div>
+                  {/* Submit */}
+                  <Button
+                    type="submit"
+                    disabled={isSubmitting}
+                    className="w-full h-14 text-lg font-semibold"
+                  >
+                    {isSubmitting ? "Processing..." : "Get Recommendations"}
+                    {!isSubmitting && <ChevronRight className="ml-2 h-5 w-5" />}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
 
-              {/* Submit */}
-              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white">
-                Get Processes
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+          {/* Sidebar */}
+          <aside className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Quick Tips 💡</CardTitle>
+              </CardHeader>
+              <CardContent className="text-sm space-y-2 text-gray-700">
+                <p>✔️ Accurate quantity = better suggestions</p>
+                <p>✔️ Moisture matters for composting vs. biogas</p>
+                <p>✔️ Available facilities help us refine results</p>
+              </CardContent>
+            </Card>
+          </aside>
+        </div>
       </div>
     </main>
-  )
+  );
 }
