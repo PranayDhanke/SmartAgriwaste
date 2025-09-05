@@ -3,10 +3,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { MessageSquare, User } from "lucide-react";
+import { User } from "lucide-react";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
-
+import Image from "next/image";
 type Chat = {
   messageId: string;
   username: string;
@@ -71,7 +70,7 @@ export default function Discussion() {
         <Card className="shadow-md border-green-200">
           <CardHeader className="flex items-center gap-2 rounded-t-lg p-4">
             <CardTitle className="text-lg ">
-               Farmers' Chat Room
+               Farmers Chat Room
             </CardTitle>
           </CardHeader>
 
@@ -89,7 +88,7 @@ export default function Discussion() {
                 {!comment.self && (
                   <div className="flex-shrink-0">
                     {comment.avtar ? (
-                      <img
+                      <Image
                         src={comment.avtar}
                         alt={comment.username}
                         className="h-8 w-8 rounded-full"

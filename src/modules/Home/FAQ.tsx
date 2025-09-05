@@ -2,14 +2,12 @@
 
 import { useState } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
-import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Leaf, Flame, Zap, Recycle, Lightbulb, Sparkles, Search } from "lucide-react"
+import { Leaf, Flame, Zap, Recycle, Lightbulb, Sparkles } from "lucide-react"
 import Link from "next/link"
 
 export default function FAQ() {
-  const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("all")
 
   const faqData = [

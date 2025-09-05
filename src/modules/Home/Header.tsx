@@ -39,7 +39,7 @@ import {
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
 
-  const [loggedIn, setLoggedIn] = useState(true);
+  const [loggedIn] = useState(true);
 
   // Navigation items based on your modules
   const navigationItems = [
