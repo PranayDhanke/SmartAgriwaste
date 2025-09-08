@@ -1,0 +1,12 @@
+import Orders from '@/modules/profile/Orders'
+import React from 'react'
+
+const page = () => {
+  return (
+    <div>
+        <Orders />
+    </div>
+  )
+}
+
+export default page

@@ -23,7 +23,6 @@ import {
   Recycle,
   Target,
   AlertTriangle,
-  FileText,
   ChevronRight,
 } from "lucide-react";
 

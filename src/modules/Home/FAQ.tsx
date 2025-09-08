@@ -4,11 +4,10 @@ import { useState } from "react"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Leaf, Flame, Zap, Recycle, Lightbulb, Sparkles } from "lucide-react"
 import Link from "next/link"
 
 export default function FAQ() {
-  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [selectedCategory] = useState("all")
 
   const faqData = [
     {
@@ -43,15 +42,6 @@ export default function FAQ() {
     }
   ]
 
-  const categories = [
-    { name: "All", value: "all", icon: Sparkles },
-    { name: "Basics", value: "basics", icon: Leaf },
-    { name: "Environment", value: "environment", icon: Flame },
-    { name: "Energy", value: "energy", icon: Zap },
-    { name: "Composting", value: "composting", icon: Recycle },
-    { name: "Business", value: "business", icon: Lightbulb },
-  ]
-
   const filteredFAQ = faqData.filter(item =>
     (selectedCategory === "all" || item.category === selectedCategory) 
   )
@@ -63,24 +53,6 @@ export default function FAQ() {
         <div className="text-center space-y-3">
           <h1 className="text-4xl font-bold">🌱 FAQ - Waste Management</h1>
           <p className="text-muted-foreground">Find answers to common questions about agricultural waste & sustainability.</p>
-        </div>
-
-        {/* Categories */}
-        <div className="flex flex-wrap gap-2 justify-center">
-          {categories.map((category) => {
-            const Icon = category.icon
-            return (
-              <Button
-                key={category.value}
-                variant={selectedCategory === category.value ? "default" : "outline"}
-                onClick={() => setSelectedCategory(category.value)}
-                className="flex items-center gap-2"
-              >
-                <Icon className="w-4 h-4" />
-                {category.name}
-              </Button>
-            )
-          })}
         </div>
 
         {/* FAQ List */}

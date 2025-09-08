@@ -53,14 +53,19 @@ const Header = () => {
     {
       onloggedIn: true,
       title: "My Listings",
-      href: "/my-listings",
+      href: "/profile/my-listing",
       icon: FiPackage,
     },
-    { onloggedIn: true, title: "Orders", href: "/orders", icon: FiDollarSign },
+    {
+      onloggedIn: true,
+      title: "Orders",
+      href: "/profile/my-orders",
+      icon: FiDollarSign,
+    },
     {
       onloggedIn: true,
       title: "Analytics",
-      href: "/analytics",
+      href: "/profile/analytics",
       icon: FiTrendingUp,
     },
     {
@@ -107,10 +112,12 @@ const Header = () => {
           {loggedIn ? (
             <>
               {/* List Waste Button */}
-              <Button className="hidden sm:inline-flex bg-green-600 hover:bg-green-700 text-white">
-                <FiPlus className="mr-2 h-4 w-4" />
-                List Waste
-              </Button>
+              <Link href={"/profile/list-waste"}>
+                <Button className="hidden sm:inline-flex bg-green-600 hover:bg-green-700 text-white">
+                  <FiPlus className="mr-2 h-4 w-4" />
+                  List Waste
+                </Button>
+              </Link>
 
               {/* Notifications */}
               <Button
