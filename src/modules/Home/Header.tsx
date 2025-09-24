@@ -1,6 +1,6 @@
-// components/Header.tsx
 "use client";
 
+import { useUser, UserButton } from "@clerk/nextjs";
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,15 +11,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import {
   FiMenu,
@@ -29,55 +20,25 @@ import {
   FiTrendingUp,
   FiUsers,
   FiDollarSign,
-  FiUser,
   FiBell,
-  FiSettings,
-  FiLogOut,
   FiPlus,
 } from "react-icons/fi";
 
 const Header = () => {
+  const { user, isSignedIn } = useUser(); // ✅ useUser hook at top-level
   const [isOpen, setIsOpen] = useState(false);
 
-  const [loggedIn] = useState(true);
-
-  // Navigation items based on your modules
   const navigationItems = [
     { onloggedIn: false, title: "Home", href: "/", icon: FiHome },
-    {
-      onloggedIn: false,
-      title: "Marketplace",
-      href: "/marketplace",
-      icon: FiShoppingCart,
-    },
-    {
-      onloggedIn: true,
-      title: "My Listings",
-      href: "/profile/my-listing",
-      icon: FiPackage,
-    },
-    {
-      onloggedIn: true,
-      title: "Orders",
-      href: "/profile/my-orders",
-      icon: FiDollarSign,
-    },
-    {
-      onloggedIn: true,
-      title: "Analytics",
-      href: "/profile/analytics",
-      icon: FiTrendingUp,
-    },
-    {
-      onloggedIn: false,
-      title: "Community",
-      href: "/community",
-      icon: FiUsers,
-    },
+    { onloggedIn: false, title: "Marketplace", href: "/marketplace", icon: FiShoppingCart },
+    { onloggedIn: true, title: "My Listings", href: "/profile/my-listing", icon: FiPackage },
+    { onloggedIn: true, title: "Orders", href: "/profile/my-orders", icon: FiDollarSign },
+    { onloggedIn: true, title: "Analytics", href: "/profile/analytics", icon: FiTrendingUp },
+    { onloggedIn: false, title: "Community", href: "/community", icon: FiUsers },
   ];
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 shadow-sm">
+    <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur shadow-sm">
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
@@ -86,15 +47,14 @@ const Header = () => {
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-bold text-green-700">AgriWaste</span>
-            <span className="text-xs text-gray-500 hidden sm:block">
-              Marketplace
-            </span>
+            <span className="text-xs text-gray-500 hidden sm:block">Marketplace</span>
           </div>
         </Link>
+
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
           {navigationItems
-            .filter((item) => (loggedIn ? true : !item.onloggedIn))
+            .filter((item) => (isSignedIn ? true : !item.onloggedIn))
             .map((item) => (
               <Link
                 key={item.href}
@@ -109,7 +69,7 @@ const Header = () => {
 
         {/* Right Side Actions */}
         <div className="flex items-center space-x-3">
-          {loggedIn ? (
+          {isSignedIn ? (
             <>
               {/* List Waste Button */}
               <Link href={"/profile/list-waste"}>
@@ -120,11 +80,7 @@ const Header = () => {
               </Link>
 
               {/* Notifications */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="inline-flex relative"
-              >
+              <Button variant="ghost" size="icon" className="inline-flex relative">
                 <FiBell className="h-4 w-4" />
                 <Badge
                   variant="destructive"
@@ -136,64 +92,19 @@ const Header = () => {
               </Button>
 
               {/* User Menu */}
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="relative h-9 w-9 rounded-full"
-                  >
-                    <Avatar className="h-9 w-9">
-                      <AvatarImage src="/farmer-avatar.jpg" alt="User" />
-                      <AvatarFallback className="bg-green-100 text-green-700 text-sm">
-                        FM
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-56" align="end">
-                  <DropdownMenuLabel>
-                    <div className="flex flex-col space-y-1">
-                      <p className="text-sm font-medium">Farmer Name</p>
-                      <p className="text-xs text-gray-500">
-                        farmer@example.com
-                      </p>
-                    </div>
-                  </DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem>
-                    <FiUser className="mr-2 h-4 w-4" />
-                    Profile
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <FiDollarSign className="mr-2 h-4 w-4" />
-                    Wallet & Payments
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <FiSettings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-red-600">
-                    <FiLogOut className="mr-2 h-4 w-4" />
-                    Logout
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <UserButton afterSignOutUrl="/" />
             </>
           ) : (
             <>
-              <Link href={""}>
-                <Button variant="secondary" className="">
-                  Login
-                </Button>
+              <Link href={"/sign-in"}>
+                <Button variant="secondary">Login</Button>
               </Link>
-              <Link href={""}>
-                <Button variant="default" className="">
-                  Sign In
-                </Button>
+              <Link href={"/sign-up"}>
+                <Button>Sign Up</Button>
               </Link>
             </>
           )}
+
           {/* Mobile Menu */}
           <Sheet open={isOpen} onOpenChange={setIsOpen}>
             <SheetTrigger asChild>
@@ -213,16 +124,19 @@ const Header = () => {
               </SheetHeader>
 
               <div className="flex flex-col space-y-4 mt-6">
-                {/* Mobile CTA */}
-                <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
-                  <FiPlus className="mr-2 h-4 w-4" />
-                  List Your Waste
-                </Button>
+                {isSignedIn && (
+                  <Link href="/profile/list-waste">
+                    <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                      <FiPlus className="mr-2 h-4 w-4" />
+                      List Your Waste
+                    </Button>
+                  </Link>
+                )}
 
                 {/* Mobile Navigation */}
                 <nav className="flex flex-col space-y-2">
                   {navigationItems
-                    .filter((item) => (loggedIn ? true : !item.onloggedIn))
+                    .filter((item) => (isSignedIn ? true : !item.onloggedIn))
                     .map((item) => (
                       <Link
                         key={item.href}
@@ -245,46 +159,3 @@ const Header = () => {
 };
 
 export default Header;
-
-/*
-🚀 INSTALLATION GUIDE
-
-1. Install Required Packages:
-npm install @radix-ui/react-dropdown-menu @radix-ui/react-sheet @radix-ui/react-avatar
-npm install react-icons
-npm install class-variance-authority clsx tailwind-merge
-
-2. Add shadcn/ui Components:
-npx shadcn-ui@latest add button dropdown-menu sheet avatar badge
-
-3. Usage in your layout:
-import Header from '@/components/Header'
-
-export default function Layout({ children }) {
-  return (
-    <div>
-      <Header />
-      <main>{children}</main>
-    </div>
-  )
-}
-
-📦 KEY FEATURES MAPPED TO YOUR MODULES:
-
-✅ Authentication: User avatar with profile dropdown
-✅ Waste Management: "List Waste" CTA + "My Listings" nav
-✅ Marketplace: Dedicated marketplace navigation
-✅ Payments: Wallet access in user menu
-✅ Orders & Logistics: Orders tracking page link
-✅ Analytics: Analytics dashboard link
-✅ Community: Community forum access
-✅ Notifications: Bell icon with badge counter
-
-🎨 DESIGN PRINCIPLES:
-- Clean, minimal interface
-- Agricultural green theme
-- Clear hierarchy and spacing
-- Mobile-first responsive design
-- Intuitive iconography
-- Professional marketplace feel
-*/
