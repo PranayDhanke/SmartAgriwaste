@@ -25,7 +25,7 @@ import {
 } from "react-icons/fi";
 
 const Header = () => {
-  const { user, isSignedIn } = useUser(); // ✅ useUser hook at top-level
+  const { isSignedIn } = useUser(); // ✅ useUser hook at top-level
   const [isOpen, setIsOpen] = useState(false);
 
   const navigationItems = [

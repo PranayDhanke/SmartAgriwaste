@@ -10,7 +10,7 @@ type Chat = {
   message: string;
 };
 
-let messages: Chat[] = []; // in-memory message store
+const messages: Chat[] = []; // in-memory message store
 
 export default function handler(
   req: NextApiRequest,
@@ -20,7 +20,7 @@ export default function handler(
 
   // Only create the server once
   if (!res.socket.server.io) {
-    const httpServer: NetServer = res.socket.server as any;
+    const httpServer: NetServer = res.socket.server;
 
     const io = new IOServer(httpServer, {
       path: "/api/socket/io", // ✅ must match client

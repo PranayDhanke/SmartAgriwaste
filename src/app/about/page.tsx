@@ -1,12 +1,10 @@
-import About from '@/modules/Home/About'
-import React from 'react'
+import About from "../../modules/Home/About";
+import React from "react";
 
-const page = () => {
+export default function page() {
   return (
     <div>
-        <About />
+      <About />
     </div>
-  )
+  );
 }
-
-export default page
