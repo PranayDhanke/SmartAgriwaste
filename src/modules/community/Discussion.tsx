@@ -1,79 +1,89 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useEffect, useState } from "react";
+import Pusher from "pusher-js";
+import { useUser } from "@clerk/nextjs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import io, { Socket } from "socket.io-client";
-import { useUser } from "@clerk/nextjs";
 
-type Chat = {
+interface Chat {
   messageId: string;
   userId: string;
   username: string;
   message: string;
-};
+}
 
 export default function Discussion() {
-  const [comments, setComments] = useState<Chat[]>([]);
-  const [newMessage, setNewMessage] = useState("");
-  const chatContainerRef = useRef<HTMLDivElement | null>(null);
-  const socketRef = useRef<Socket | null>(null);
-
-  // Clerk user
   const { user, isLoaded } = useUser();
 
+  const [messages, setMessages] = useState<Chat[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+
+  const userId = user?.id ;
+  const username =
+    user?.fullName ||
+    user?.username ||
+    user?.primaryEmailAddress?.emailAddress 
+
   useEffect(() => {
-    if (!isLoaded) return;
+    const fetchMessages = async () => {
+      try {
+        const res = await fetch("/api/chat/get", {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        });
+        const data = await res.json();
+        setMessages(data.messages);
+      } catch {
+        console.log("error");
+      }
+    };
+  }, []);
 
-    // boot up serverless socket handler
-    fetch("/api/socket");
+  useEffect(() => {
+    if (
+      !process.env.NEXT_PUBLIC_PUSHER_KEY ||
+      !process.env.NEXT_PUBLIC_PUSHER_CLUSTER
+    ) {
+      console.error("Missing Pusher env vars");
+      return;
+    }
 
-    // connect socket
-    const socket = io({ path: "/api/socket/io" });
-    socketRef.current = socket;
-
-    // get existing chat history
-    socket.on("load-messages", (msgs: Chat[]) => {
-      setComments(msgs);
+    const pusher = new Pusher(process.env.NEXT_PUBLIC_PUSHER_KEY, {
+      cluster: process.env.NEXT_PUBLIC_PUSHER_CLUSTER,
     });
 
-    // listen for new messages
-    socket.on("receive-msg", (data: Chat) => {
-      setComments((prev) => [...prev, data]);
+    const channel = pusher.subscribe("community");
+
+    channel.bind("new-message", (data: Chat) => {
+      setMessages((prev) => {
+        if (prev.some((m) => m.messageId === data.messageId)) return prev; // prevent duplicates
+        return [...prev, data];
+      });
     });
 
     return () => {
-      socket.disconnect();
+      channel.unbind_all();
+      channel.unsubscribe();
+      pusher.disconnect();
     };
-  }, [isLoaded]);
+  }, []);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!newMessage.trim() || !user) return;
 
-    const messageObj: Chat = {
-      messageId: Date.now().toString(),
-      userId: user.id,
-      username: user.fullName || user.username || "Anonymous",
-      message: newMessage.trim(),
-    };
-
-    // send to server
-    socketRef.current?.emit("send-msg", messageObj);
-
-    // optimistic UI
-    setComments((prev) => [...prev, messageObj]);
-
-    setNewMessage("");
-  };
-
-  // auto scroll to bottom
-  useEffect(() => {
-    if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop =
-        chatContainerRef.current.scrollHeight;
+    try {
+      await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, username, message: newMessage }),
+      });
+      setNewMessage("");
+    } catch (error) {
+      console.error("Failed to send:", error);
     }
-  }, [comments]);
+  };
 
   if (!isLoaded) {
     return (
@@ -101,37 +111,32 @@ export default function Discussion() {
             </CardTitle>
           </CardHeader>
 
-          <CardContent
-            ref={chatContainerRef}
-            className="bg-white max-h-[450px] overflow-y-auto p-4 space-y-4"
-          >
-            {comments.length === 0 ? (
-              "No messages yet. Start the conversation!"
-            ) : (
-              comments.map((comment) => (
-                <div
-                  key={comment.messageId}
-                  className={`flex items-end gap-2 ${
-                    comment.userId === user.id ? "justify-end" : "justify-start"
-                  }`}
-                >
+          <CardContent className="bg-white max-h-[450px] overflow-y-auto p-4 space-y-4">
+            {messages.length === 0
+              ? "No messages yet. Start the conversation!"
+              : messages.map((msg) => (
                   <div
-                    className={`rounded-2xl px-4 py-2 max-w-[70%] text-sm shadow-sm ${
-                      comment.userId === user.id
-                        ? "bg-green-600 text-white rounded-br-none"
-                        : "bg-gray-100 text-gray-800 rounded-bl-none"
+                    key={msg.messageId}
+                    className={`flex items-end gap-2 ${
+                      msg.userId === userId ? "justify-end" : "justify-start"
                     }`}
                   >
-                    {comment.userId !== user.id && (
-                      <p className="text-xs font-semibold text-green-700 mb-1">
-                        {comment.username}
-                      </p>
-                    )}
-                    <p>{comment.message}</p>
+                    <div
+                      className={`rounded-2xl px-4 py-2 max-w-[70%] text-sm shadow-sm ${
+                        msg.userId === userId
+                          ? "bg-green-600 text-white rounded-br-none"
+                          : "bg-gray-100 text-gray-800 rounded-bl-none"
+                      }`}
+                    >
+                      {msg.userId !== userId && (
+                        <p className="text-xs font-semibold text-green-700 mb-1">
+                          {msg.username}
+                        </p>
+                      )}
+                      <p>{msg.message}</p>
+                    </div>
                   </div>
-                </div>
-              ))
-            )}
+                ))}
           </CardContent>
 
           <div className="flex items-center gap-2 p-4 border-t">

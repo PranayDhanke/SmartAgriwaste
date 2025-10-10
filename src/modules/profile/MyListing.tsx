@@ -5,44 +5,77 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Leaf, ShoppingCart, Filter } from "lucide-react"
+import { Leaf, Edit, Trash2, Filter } from "lucide-react"
+
+type WasteType = "crop" | "fruit" | "vegetable"
+
+interface WasteFormData {
+  id: number
+  title: string
+  wasteType: WasteType | ""
+  wasteProduct: string
+  quantity: string
+  moisture: string
+  price: string
+  location: string
+  description: string
+  image: File | null
+}
 
 export default function MyListing() {
   const [search, setSearch] = useState("")
 
-  const listings = [
+  const [listings, setListings] = useState<WasteFormData[]>([
     {
       id: 1,
       title: "Cotton Crop Residues",
-      type: "Crop",
+      wasteType: "crop",
+      wasteProduct: "Cotton",
+      quantity: "2 tons",
+      moisture: "dry",
       price: "₹2000 / ton",
       location: "Pune, Maharashtra",
-      quantity: "2 tons",
-      moisture: "Dry",
+      description: "Fresh crop residues",
+      image: null,
     },
     {
       id: 2,
       title: "Vegetable Waste (Cabbage, Tomato)",
-      type: "Vegetable",
+      wasteType: "vegetable",
+      wasteProduct: "Cabbage",
+      quantity: "1.5 tons",
+      moisture: "semiwet",
       price: "₹1500 / ton",
       location: "Nashik, Maharashtra",
-      quantity: "1.5 tons",
-      moisture: "Semi-wet",
+      description: "Mixed vegetable waste",
+      image: null,
     },
     {
       id: 3,
       title: "Fruit Waste (Mango Pulp)",
-      type: "Fruit",
+      wasteType: "fruit",
+      wasteProduct: "Mango",
+      quantity: "3 tons",
+      moisture: "wet",
       price: "₹2500 / ton",
       location: "Nagpur, Maharashtra",
-      quantity: "3 tons",
-      moisture: "Wet",
+      description: "Mango pulp waste",
+      image: null,
     },
-  ]
+  ])
 
   const filteredListings = listings.filter((item) =>
     item.title.toLowerCase().includes(search.toLowerCase())
   )
+
+  const handleEdit = (id: number) => {
+    console.log("Edit listing", id)
+    alert(`Edit listing ${id}`)
+  }
+
+  const handleDelete = (id: number) => {
+    setListings((prev) => prev.filter((item) => item.id !== id))
+  }
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-8">
@@ -73,26 +106,41 @@ export default function MyListing() {
                 {item.title}
                 <Badge
                   className={`${
-                    item.type === "Crop"
+                    item.wasteType === "crop"
                       ? "bg-green-100 text-green-700"
-                      : item.type === "Vegetable"
+                      : item.wasteType === "vegetable"
                       ? "bg-blue-100 text-blue-700"
                       : "bg-orange-100 text-orange-700"
                   }`}
                 >
-                  {item.type}
+                  {item.wasteType}
                 </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-gray-700">
+            <CardContent className="space-y-2 text-gray-700">
+              <p><span className="font-medium">Product:</span> {item.wasteProduct}</p>
               <p><span className="font-medium">Price:</span> {item.price}</p>
               <p><span className="font-medium">Quantity:</span> {item.quantity}</p>
               <p><span className="font-medium">Moisture:</span> {item.moisture}</p>
               <p><span className="font-medium">Location:</span> {item.location}</p>
+              <p><span className="font-medium">Description:</span> {item.description}</p>
 
-              <Button className="w-full mt-3">
-                <ShoppingCart className="h-4 w-4 mr-2" /> Buy Now
-              </Button>
+              <div className="flex gap-2 mt-3">
+                <Button
+                  variant="outline"
+                  className="flex-1 flex items-center justify-center gap-2"
+                  onClick={() => handleEdit(item.id)}
+                >
+                  <Edit className="h-4 w-4" /> Edit
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1 flex items-center justify-center gap-2"
+                  onClick={() => handleDelete(item.id)}
+                >
+                  <Trash2 className="h-4 w-4" /> Delete
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ))}
