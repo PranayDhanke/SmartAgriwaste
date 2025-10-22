@@ -39,6 +39,7 @@ export default function Discussion() {
         console.log("error");
       }
     };
+    fetchMessages();
   }, []);
 
   useEffect(() => {

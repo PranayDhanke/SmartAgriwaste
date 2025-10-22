@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     const aadharUrl = formdata.get("aadharUrl");
     const farmDocUrl = formdata.get("farmDocUrl");
 
-    const rews = await account.create<IAccount>({
+    await account.create<IAccount>({
       farmerId,
       firstName,
       lastName,

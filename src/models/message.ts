@@ -7,7 +7,7 @@ interface Chat {
   message: string;
 }
 
-const messsageSchema = new mongoose.Schema<Chat>({
+const messsageSchema = new Schema<Chat>({
   messageId: { type: String, required: true },
   message: { type: String, required: true },
   userId: { type: String, required: true },
