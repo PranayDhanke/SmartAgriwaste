@@ -3,13 +3,13 @@ import mongoose, { Schema } from "mongoose";
 type FarmUnit = "hectare" | "acre";
 
 interface IAccount {
-  farmerId: string; // Clerk user ID
+  farmerId: string; 
   firstName: string;
   lastName: string;
   username: string;
   email: string;
   phone: string;
-  aadhar: string;
+  aadharnumber: string;
 
   // Address
   state: string;
@@ -20,8 +20,8 @@ interface IAccount {
   roadarealandmarkName: string;
 
   // Files (store only URLs in MongoDB)
-  aadharUrl?: string; // Aadhaar photo
-  farmDocUrl?: string; // 7/12 or 8A document
+  aadharUrl: string; // Aadhaar photo
+  farmDocUrl: string; // 7/12 or 8A document
 
   // Farm details
   farmNumber: string; // 7/12 or 8A number
@@ -32,29 +32,29 @@ interface IAccount {
 const AccountSchema = new Schema<IAccount>(
   {
     farmerId: { type: String, required: true, unique: true },
-    firstName: { type: String },
-    lastName: { type: String },
-    username: { type: String },
-    email: { type: String },
-    phone: { type: String },
-    aadhar: { type: String },
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    username: { type: String, required: true },
+    email: { type: String, required: true },
+    phone: { type: String, required: true },
+    aadharnumber: { type: String, required: true },
 
     // Address
-    state: { type: String },
-    district: { type: String },
+    state: { type: String, required: true },
+    district: { type: String, required: true },
     taluka: { type: String },
-    village: { type: String },
-    houseBuildingName: { type: String },
-    roadarealandmarkName: { type: String },
+    village: { type: String, required: true },
+    houseBuildingName: { type: String, required: true },
+    roadarealandmarkName: { type: String, required: true },
 
     // File URLs
-    aadharUrl: { type: String },
-    farmDocUrl: { type: String },
+    aadharUrl: { type: String, required: true },
+    farmDocUrl: { type: String, required: true },
 
     // Farm
-    farmNumber: { type: String },
-    farmArea: { type: String },
-    farmUnit: { type: String, enum: ["hectare", "acre"] },
+    farmNumber: { type: String, required: true },
+    farmArea: { type: String, required: true },
+    farmUnit: { type: String, enum: ["hectare", "acre"], required: true },
   },
   { timestamps: true }
 );

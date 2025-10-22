@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { Leaf, FileText, Check } from "lucide-react";
+import { Leaf, CheckCircle2 } from "lucide-react";
 import addressJson from "@/../public/Address.json";
 
 interface AddressType {
@@ -24,18 +24,17 @@ interface AddressType {
   villages: { [key: string]: string[] };
 }
 
-
 export default function CreateAccount() {
   const { user, isLoaded, isSignedIn } = useUser();
   const router = useRouter();
-
   const Address: AddressType = addressJson;
 
   const [step, setStep] = useState(1);
+  const [loading, setLoading] = useState(false);
 
   const [form, setForm] = useState({
     phone: "",
-    aadhar: "",
+    aadharnumber: "",
     houseBuildingName: "",
     roadarealandmarkName: "",
     state: "",
@@ -43,15 +42,30 @@ export default function CreateAccount() {
     taluka: "",
     village: "",
     role: "farmer",
-    photo: null as File | null,
+    aadhar: null as File | null,
+    farmdoc: null as File | null,
     farmNumber: "",
-    farmDoc: null as File | null,
     farmArea: "",
     farmUnit: "hectare",
   });
 
-  if (!isLoaded) return <p>Loading...</p>;
-  if (!isSignedIn) return <p>You must be signed in</p>;
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center">
+        <div className="text-green-600 text-lg font-medium">Loading...</div>
+      </div>
+    );
+  }
+
+  if (!isSignedIn) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 flex items-center justify-center">
+        <Card className="p-8 shadow-xl">
+          <p className="text-gray-700 text-center">You must be signed in to access this page</p>
+        </Card>
+      </div>
+    );
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -63,377 +77,378 @@ export default function CreateAccount() {
       setForm({ ...form, [e.target.name]: e.target.files[0] });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
+  const uploadToImageKit = async (file: File, folder: string) => {
     const data = new FormData();
-    data.append("clerkId", user.id);
-    data.append("firstName", user.firstName || "");
-    data.append("lastName", user.lastName || "");
-    data.append("username", user.username || "");
-    data.append("email", user.primaryEmailAddress?.emailAddress || "");
-    data.append("phone", form.phone);
-    data.append("aadhar", form.aadhar);
-    data.append("state", form.state);
-    data.append("district", form.district);
-    data.append("taluka", form.taluka);
-    data.append("village", form.village);
-    data.append("houseBuildingName", form.houseBuildingName);
-    data.append("roadarealandmarkName", form.roadarealandmarkName);
-    if (form.photo) data.append("photo", form.photo);
-    data.append("farmNumber", form.farmNumber);
-    if (form.farmDoc) data.append("farmDoc", form.farmDoc);
-    data.append("farmArea", form.farmArea);
-    data.append("farmUnit", form.farmUnit);
+    data.append("file", file);
+    data.append("farmerid", user.id.replace(/^user_/, "fam_"));
+    data.append("folder", folder);
 
-    const res = await fetch("/api/profile", {
+    const res = await fetch(`/api/upload`, {
       method: "POST",
       body: data,
     });
 
-    if (res.ok) router.push("/");
-    else alert("Error creating profile");
+    if (!res.ok) throw new Error(`Failed to upload ${folder}`);
+    const result = await res.json();
+    return result.url;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+
+    try {
+      let aadharUrl = "";
+      let farmDocUrl = "";
+
+      if (form.aadhar) {
+        alert("uploading aadhar");
+        aadharUrl = await uploadToImageKit(form.aadhar, "aadhar");
+      }
+
+      if (form.farmdoc) {
+        alert("uploading formdoc");
+        farmDocUrl = await uploadToImageKit(form.farmdoc, "farmdoc");
+      }
+
+      const formdata = new FormData();
+      formdata.append("farmerId", user.id.replace(/^user_/, "fam_"));
+      formdata.append("firstName", user.firstName || "");
+      formdata.append("lastName", user.lastName || "");
+      formdata.append("username", user.username || "");
+      formdata.append("email", user.primaryEmailAddress?.emailAddress || "");
+      formdata.append("phone", form.phone);
+      formdata.append("aadharnumber", form.aadharnumber);
+      formdata.append("state", form.state);
+      formdata.append("district", form.district);
+      formdata.append("taluka", form.taluka);
+      formdata.append("village", form.village);
+      formdata.append("houseBuildingName", form.houseBuildingName);
+      formdata.append("roadarealandmarkName", form.roadarealandmarkName);
+      formdata.append("farmNumber", form.farmNumber);
+      formdata.append("farmArea", form.farmArea);
+      formdata.append("farmUnit", form.farmUnit);
+      formdata.append("aadharUrl", aadharUrl);
+      formdata.append("farmDocUrl", farmDocUrl);
+
+      const res = await fetch("/api/profile", {
+        method: "POST",
+        body: formdata,
+      });
+
+      if (res.ok) {
+        alert("✅ Profile created successfully!");
+        router.push("/");
+      } else {
+        alert("❌ Failed to save profile.");
+      }
+    } catch (err) {
+      console.error(err);
+      alert("⚠️ Something went wrong during upload.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-4 flex items-center justify-center">
-      <Card className="w-full max-w-3xl shadow-xl border-green-200">
-        <CardHeader className="space-y-4 mt-[-24px] pt-5 pb-8 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-t-lg">
-          <div className="flex items-center justify-center gap-2">
-            <Leaf className="w-8 h-8" />
-            <CardTitle className="text-3xl font-bold text-center">
-              Farmer Waste Management
+    <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-8 px-4 flex items-center justify-center">
+      <Card className="w-full max-w-2xl shadow-2xl border-0 overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-green-600 to-emerald-600 text-white pb-8 pt-8">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <div className="bg-white/20 p-3 rounded-full backdrop-blur-sm">
+              <Leaf className="w-8 h-8" />
+            </div>
+            <CardTitle className="text-3xl font-bold">
+              Farmer Registration
             </CardTitle>
           </div>
-          <p className="text-center text-green-50 text-sm">
-            Complete your profile to start managing agricultural waste
-            efficiently
+          <p className="text-center text-green-50 text-sm max-w-md mx-auto leading-relaxed">
+            Complete your profile to start managing agricultural waste efficiently
           </p>
+          
+          {/* Progress Indicator */}
+          <div className="flex items-center justify-center gap-2 mt-6">
+            <div className={`flex items-center gap-2 transition-colors ${step >= 1 ? 'text-white' : 'text-green-300'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold transition-all ${step >= 1 ? 'bg-white text-green-600' : 'bg-green-500'}`}>
+                {step > 1 ? <CheckCircle2 className="w-5 h-5" /> : '1'}
+              </div>
+              <span className="text-sm font-medium hidden sm:inline">Personal</span>
+            </div>
+            <div className={`w-12 h-0.5 transition-colors ${step >= 2 ? 'bg-white' : 'bg-green-400'}`}></div>
+            <div className={`flex items-center gap-2 transition-colors ${step >= 2 ? 'text-white' : 'text-green-300'}`}>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center font-semibold transition-all ${step >= 2 ? 'bg-white text-green-600' : 'bg-green-500'}`}>
+                2
+              </div>
+              <span className="text-sm font-medium hidden sm:inline">Farm Details</span>
+            </div>
+          </div>
         </CardHeader>
 
-        <CardContent className="pt-8">
+        <CardContent className="p-8">
           <form onSubmit={handleSubmit}>
-            {/* Slider Wrapper */}
-            <div className="overflow-hidden relative w-full">
+            <div className="overflow-hidden">
               <div
                 className="flex transition-transform duration-500 ease-in-out"
                 style={{ transform: `translateX(-${(step - 1) * 100}%)` }}
               >
-                {/* Step 1: Personal */}
-                <div className="w-full flex-shrink-0 space-y-5 px-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1 h-6 bg-green-600 rounded-full" />
-                    <h2 className="font-bold text-xl text-gray-800">
-                      Personal & Identity
-                    </h2>
-                  </div>
-
+                {/* STEP 1 - PERSONAL DETAILS */}
+                <div className="w-full flex-shrink-0 space-y-6">
                   <div className="space-y-2">
-                    <Label
-                      htmlFor="phone"
-                      className="text-gray-700 font-medium"
-                    >
-                      Phone Number <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="phone"
-                      name="phone"
-                      value={form.phone}
-                      onChange={handleChange}
-                      placeholder="Enter your phone number"
-                      className="border-gray-300 focus:border-green-500 focus:ring-green-500"
-                      required
-                    />
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label
-                      htmlFor="aadhar"
-                      className="text-gray-700 font-medium"
-                    >
+                    <Label className="text-sm font-semibold text-gray-700">
                       Aadhaar Number <span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      id="aadhar"
-                      name="aadhar"
-                      value={form.aadhar}
+                      name="aadharnumber"
+                      value={form.aadharnumber}
                       onChange={handleChange}
-                      placeholder="Enter 12-digit Aadhaar Number"
-                      maxLength={12}
+                      placeholder="XXXX XXXX XXXX"
                       className="border-gray-300 focus:border-green-500 focus:ring-green-500"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label
-                      htmlFor="photo"
-                      className="text-gray-700 font-medium"
-                    >
+                    <Label className="text-sm font-semibold text-gray-700">
                       Aadhaar Photo <span className="text-red-500">*</span>
                     </Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-green-500 transition-colors">
+                    <div className="relative">
                       <Input
                         type="file"
-                        id="photo"
-                        name="photo"
+                        name="aadhar"
                         accept="image/*"
                         onChange={handleFileChange}
-                        className="cursor-pointer"
+                        className="border-gray-300 focus:border-green-500"
+                        required
                       />
+                      {form.aadhar && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 text-sm font-medium">
+                          ✓ Selected
+                        </span>
+                      )}
                     </div>
                   </div>
 
-                  <div className="pt-4">
-                    <div className="flex items-center gap-2 mb-4">
-                      <div className="w-1 h-6 bg-green-600 rounded-full" />
-                      <h3 className="font-semibold text-lg text-gray-800">
-                        Address Details
-                      </h3>
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Phone Number <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      name="phone"
+                      value={form.phone}
+                      onChange={handleChange}
+                      placeholder="+91 XXXXX XXXXX"
+                      className="border-gray-300 focus:border-green-500"
+                      required
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        State <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        onValueChange={(value) =>
+                          setForm({
+                            ...form,
+                            state: value,
+                            district: "",
+                            taluka: "",
+                            village: "",
+                          })
+                        }
+                        value={form.state}
+                      >
+                        <SelectTrigger className="border-gray-300">
+                          <SelectValue placeholder="Select State" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Address.states.map((s) => (
+                            <SelectItem key={s} value={s}>
+                              {s}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* State */}
-                      <div className="space-y-2">
-                        <Label className="text-gray-700 font-medium">
-                          State <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                          onValueChange={(value) =>
-                            setForm({
-                              ...form,
-                              state: value,
-                              district: "",
-                              taluka: "",
-                              village: "",
-                            })
-                          }
-                        >
-                          <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
-                            <SelectValue placeholder="Select State" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {Address.states.map((s) => (
-                              <SelectItem key={s} value={s}>
-                                {s}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
 
-                      {/* District */}
-                      <div className="space-y-2">
-                        <Label className="text-gray-700 font-medium">
-                          District <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                          onValueChange={(value) =>
-                            setForm({
-                              ...form,
-                              district: value,
-                              taluka: "",
-                              village: "",
-                            })
-                          }
-                          disabled={!form.state}
-                        >
-                          <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
-                            <SelectValue placeholder="Select District" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(form.state
-                              ? (Address.districts[form.state] as string[]) ||
-                                []
-                              : []
-                            ).map((d) => (
-                              <SelectItem key={d} value={d}>
-                                {d}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Taluka */}
-                      <div className="space-y-2">
-                        <Label className="text-gray-700 font-medium">
-                          Taluka <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                          onValueChange={(value) =>
-                            setForm({ ...form, taluka: value, village: "" })
-                          }
-                          disabled={!form.district}
-                        >
-                          <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
-                            <SelectValue placeholder="Select Taluka" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(form.district
-                              ? Address.talukas[form.district] || []
-                              : []
-                            ).map((t) => (
-                              <SelectItem key={t} value={t}>
-                                {t}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Village */}
-                      <div className="space-y-2">
-                        <Label className="text-gray-700 font-medium">
-                          Village/City <span className="text-red-500">*</span>
-                        </Label>
-                        <Select
-                          onValueChange={(value) =>
-                            setForm({ ...form, village: value })
-                          }
-                          disabled={!form.taluka}
-                        >
-                          <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
-                            <SelectValue placeholder="Select Village/City" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {(form.taluka
-                              ? Address.villages[form.taluka] || []
-                              : []
-                            ).map((v) => (
-                              <SelectItem key={v} value={v}>
-                                {v}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="phone"
-                          className="text-gray-700 font-medium"
-                        >
-                          House Number / Building Name
-                        </Label>
-                        <Input
-                          id=" houseBuildingName"
-                          name="houseBuildingName"
-                          value={form.houseBuildingName}
-                          onChange={handleChange}
-                          placeholder="Enter your House Number or Building Name"
-                          className="border-gray-300 focus:border-green-500 focus:ring-green-500"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label
-                          htmlFor="phone"
-                          className="text-gray-700 font-medium"
-                        >
-                          Road Name , Area , Landmark{" "}
-                          <span className="text-red-500">*</span>
-                        </Label>
-                        <Input
-                          id="roadarealandmarkName"
-                          name="roadarealandmarkName"
-                          value={form.roadarealandmarkName}
-                          onChange={handleChange}
-                          placeholder="Enter your Road Name , Area , Landmark"
-                          className="border-gray-300 focus:border-green-500 focus:ring-green-500"
-                          required
-                        />
-                      </div>
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        District <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        onValueChange={(value) =>
+                          setForm({
+                            ...form,
+                            district: value,
+                            taluka: "",
+                            village: "",
+                          })
+                        }
+                        disabled={!form.state}
+                        value={form.district}
+                      >
+                        <SelectTrigger className="border-gray-300">
+                          <SelectValue placeholder="Select District" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Address.districts[form.state] || []).map((d) => (
+                            <SelectItem key={d} value={d}>
+                              {d}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Taluka <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        onValueChange={(value) =>
+                          setForm({ ...form, taluka: value, village: "" })
+                        }
+                        disabled={!form.district}
+                        value={form.taluka}
+                      >
+                        <SelectTrigger className="border-gray-300">
+                          <SelectValue placeholder="Select Taluka" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Address.talukas[form.district] || []).map((t) => (
+                            <SelectItem key={t} value={t}>
+                              {t}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label className="text-sm font-semibold text-gray-700">
+                        Village / City <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        onValueChange={(value) => setForm({ ...form, village: value })}
+                        disabled={!form.taluka}
+                        value={form.village}
+                      >
+                        <SelectTrigger className="border-gray-300">
+                          <SelectValue placeholder="Select Village/City" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {(Address.villages[form.taluka] || []).map((v) => (
+                            <SelectItem key={v} value={v}>
+                              {v}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      House Number / Building Name
+                    </Label>
+                    <Input
+                      name="houseBuildingName"
+                      value={form.houseBuildingName}
+                      onChange={handleChange}
+                      placeholder="e.g., House No. 123, Building ABC"
+                      className="border-gray-300 focus:border-green-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Road, Area, Landmark
+                    </Label>
+                    <Input
+                      name="roadarealandmarkName"
+                      value={form.roadarealandmarkName}
+                      onChange={handleChange}
+                      placeholder="e.g., Near Town Hall, Main Road"
+                      className="border-gray-300 focus:border-green-500"
+                    />
                   </div>
 
                   <Button
                     type="button"
-                    className="w-full mt-6 bg-green-600 hover:bg-green-700 text-white font-semibold py-6 text-lg shadow-lg"
                     onClick={() => setStep(2)}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all"
                   >
                     Continue to Farm Details →
                   </Button>
                 </div>
 
-                {/* Step 2: Farm Details */}
-                <div className="w-full flex-shrink-0 space-y-5 px-2">
-                  <div className="flex items-center gap-2 mb-4">
-                    <div className="w-1 h-6 bg-green-600 rounded-full" />
-                    <h2 className="font-bold text-xl text-gray-800">
-                      Farm Details
-                    </h2>
-                  </div>
-
+                {/* STEP 2 - FARM DETAILS */}
+                <div className="w-full flex-shrink-0 space-y-6 pl-4">
                   <div className="space-y-2">
-                    <Label
-                      htmlFor="farmNumber"
-                      className="text-gray-700 font-medium"
-                    >
+                    <Label className="text-sm font-semibold text-gray-700">
                       7/12 or 8A Number <span className="text-red-500">*</span>
                     </Label>
                     <Input
-                      id="farmNumber"
                       name="farmNumber"
                       value={form.farmNumber}
                       onChange={handleChange}
-                      placeholder="Enter 7/12 or 8A Number"
-                      className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                      placeholder="Enter document number"
+                      className="border-gray-300 focus:border-green-500"
                       required
                     />
                   </div>
 
                   <div className="space-y-2">
-                    <Label
-                      htmlFor="farmDoc"
-                      className="text-gray-700 font-medium"
-                    >
-                      7/12 or 8A Document{" "}
-                      <span className="text-red-500">*</span>
+                    <Label className="text-sm font-semibold text-gray-700">
+                      Upload Farm Document <span className="text-red-500">*</span>
                     </Label>
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 hover:border-green-500 transition-colors">
+                    <div className="relative">
                       <Input
                         type="file"
-                        id="farmDoc"
-                        name="farmDoc"
+                        name="farmdoc"
                         accept="image/*,application/pdf"
                         onChange={handleFileChange}
-                        className="cursor-pointer"
+                        className="border-gray-300 focus:border-green-500"
+                        required
                       />
-                      <p className="text-xs text-gray-500 mt-2">
-                        Upload PDF or image format
-                      </p>
+                      {form.farmdoc && (
+                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600 text-sm font-medium">
+                          ✓ Selected
+                        </span>
+                      )}
                     </div>
+                    <p className="text-xs text-gray-500">Accepted: Images or PDF files</p>
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <Label
-                        htmlFor="farmArea"
-                        className="text-gray-700 font-medium"
-                      >
+                      <Label className="text-sm font-semibold text-gray-700">
                         Farm Area <span className="text-red-500">*</span>
                       </Label>
                       <Input
-                        id="farmArea"
-                        name="farmArea"
                         type="number"
                         step="0.01"
+                        name="farmArea"
                         value={form.farmArea}
                         onChange={handleChange}
-                        placeholder="Enter Farm Area"
-                        className="border-gray-300 focus:border-green-500 focus:ring-green-500"
+                        placeholder="Enter area"
+                        className="border-gray-300 focus:border-green-500"
                         required
                       />
                     </div>
+
                     <div className="space-y-2">
-                      <Label className="text-gray-700 font-medium">
+                      <Label className="text-sm font-semibold text-gray-700">
                         Unit <span className="text-red-500">*</span>
                       </Label>
                       <Select
-                        onValueChange={(value) =>
-                          setForm({ ...form, farmUnit: value })
-                        }
+                        onValueChange={(value) => setForm({ ...form, farmUnit: value })}
                         defaultValue={form.farmUnit}
                       >
-                        <SelectTrigger className="border-gray-300 focus:border-green-500 focus:ring-green-500">
+                        <SelectTrigger className="border-gray-300">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -444,36 +459,27 @@ export default function CreateAccount() {
                     </div>
                   </div>
 
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4 mt-6">
-                    <div className="flex items-start gap-3">
-                      <FileText className="w-5 h-5 text-green-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-gray-800">
-                          Why we need this information?
-                        </p>
-                        <p className="text-xs text-gray-600 mt-1">
-                          Farm documentation helps us verify your land ownership
-                          and provide you with accurate waste management
-                          solutions tailored to your farm size.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-4 mt-8">
+                  <div className="flex flex-col sm:flex-row gap-3 pt-4">
                     <Button
                       type="button"
                       variant="outline"
-                      className="w-1/2 border-2 border-green-600 text-green-600 hover:bg-green-50 font-semibold py-6 text-lg"
                       onClick={() => setStep(1)}
+                      className="w-full sm:w-1/2 border-2 border-green-600 text-green-600 hover:bg-green-50 py-6 text-base font-semibold"
                     >
                       ← Back
                     </Button>
                     <Button
                       type="submit"
-                      className="w-1/2 bg-green-600 hover:bg-green-700 text-white font-semibold py-6 text-lg shadow-lg"
+                      disabled={loading}
+                      className="w-full sm:w-1/2 bg-green-600 hover:bg-green-700 text-white py-6 text-base font-semibold shadow-lg hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Complete Profile ✓
+                      {loading ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <span className="animate-spin">⏳</span> Uploading...
+                        </span>
+                      ) : (
+                        "Complete Profile ✓"
+                      )}
                     </Button>
                   </div>
                 </div>
