@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 type WasteType = "crop" | "fruit" | "vegetable";
 
 interface WasteFormData {
+  farmerId: string;
   title: string;
   wasteType: WasteType | "";
   wasteProduct: string;
@@ -13,7 +14,7 @@ interface WasteFormData {
   price: string;
   location: string;
   description: string;
-  image: string | null; // base64 string
+  imageUrl: string ; // base64 string
 }
 
 export async function POST(req: NextRequest) {

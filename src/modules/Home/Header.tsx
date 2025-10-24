@@ -1,6 +1,6 @@
 "use client";
 
-import { useUser, UserButton } from "@clerk/nextjs";
+import { useUser, useClerk } from "@clerk/nextjs";
 import { useState } from "react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,14 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuTrigger,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuLabel,
+} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import {
   FiMenu,
@@ -22,10 +30,14 @@ import {
   FiDollarSign,
   FiBell,
   FiPlus,
+  FiUser,
+  FiSettings,
+  FiLogOut,
 } from "react-icons/fi";
 
 const Header = () => {
-  const { isSignedIn } = useUser(); // ✅ useUser hook at top-level
+  const { isSignedIn, user } = useUser();
+  const { signOut, openUserProfile } = useClerk();
   const [isOpen, setIsOpen] = useState(false);
 
   const navigationItems = [
@@ -67,11 +79,10 @@ const Header = () => {
             ))}
         </nav>
 
-        {/* Right Side Actions */}
+        {/* Right Actions */}
         <div className="flex items-center space-x-3">
           {isSignedIn ? (
             <>
-              {/* List Waste Button */}
               <Link href={"/profile/list-waste"}>
                 <Button className="hidden sm:inline-flex bg-green-600 hover:bg-green-700 text-white">
                   <FiPlus className="mr-2 h-4 w-4" />
@@ -79,8 +90,7 @@ const Header = () => {
                 </Button>
               </Link>
 
-              {/* Notifications */}
-              <Button variant="ghost" size="icon" className="inline-flex relative">
+              <Button variant="ghost" size="icon" className="relative">
                 <FiBell className="h-4 w-4" />
                 <Badge
                   variant="destructive"
@@ -88,11 +98,43 @@ const Header = () => {
                 >
                   2
                 </Badge>
-                <span className="sr-only">Notifications</span>
               </Button>
 
-              {/* User Menu */}
-              <UserButton afterSignOutUrl="/" />
+              {/* Custom Profile Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 hover:bg-green-100 transition">
+                    <img
+                      src={user?.imageUrl}
+                      alt="User Avatar"
+                      className="w-8 h-8 rounded-full"
+                    />
+                    <span className="text-sm font-medium text-green-700 hidden sm:block">
+                      {user?.firstName || "Profile"}
+                    </span>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-48 p-1" align="end">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => openUserProfile()}>
+                    <FiUser className="mr-2 h-4 w-4" />
+                    Profile
+                  </DropdownMenuItem>
+                  <DropdownMenuItem>
+                    <FiSettings className="mr-2 h-4 w-4" />
+                    Settings
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => signOut({ redirectUrl: "/" })}
+                    className="text-red-600"
+                  >
+                    <FiLogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           ) : (
             <>
@@ -110,7 +152,6 @@ const Header = () => {
             <SheetTrigger asChild>
               <Button variant="ghost" size="icon" className="md:hidden">
                 <FiMenu className="h-5 w-5" />
-                <span className="sr-only">Menu</span>
               </Button>
             </SheetTrigger>
             <SheetContent side="right" className="w-[290px] px-2">
@@ -133,7 +174,6 @@ const Header = () => {
                   </Link>
                 )}
 
-                {/* Mobile Navigation */}
                 <nav className="flex flex-col space-y-2">
                   {navigationItems
                     .filter((item) => (isSignedIn ? true : !item.onloggedIn))
