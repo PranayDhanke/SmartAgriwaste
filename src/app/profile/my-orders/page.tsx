@@ -1,5 +1,5 @@
-import Orders from '@/modules/profile/Orders'
-import React from 'react'
+import Orders from "@/modules/profile/farmer/Orders"
+
 
 const page = () => {
   return (

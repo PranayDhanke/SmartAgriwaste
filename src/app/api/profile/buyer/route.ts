@@ -1,11 +1,9 @@
 import dbConnect from "@/lib/mongoDB";
-import farmeraccount from "@/models/farmeraccount";
+import buyeraccount from "@/models/buyeraccount";
 import { NextRequest, NextResponse } from "next/server";
 
-type FarmUnit = "hectare" | "acre";
-
 interface IAccount {
-  farmerId: string; 
+  farmerId: string;
   firstName: string;
   lastName: string;
   username: string;
@@ -23,14 +21,7 @@ interface IAccount {
 
   // Files (store only URLs in MongoDB)
   aadharUrl: string; // Aadhaar photo
-  farmDocUrl: string; // 7/12 or 8A document
-
-  // Farm details
-  farmNumber: string; // 7/12 or 8A number
-  farmArea: string;
-  farmUnit: FarmUnit;
 }
-
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,13 +42,9 @@ export async function POST(request: NextRequest) {
     const village = formdata.get("village");
     const houseBuildingName = formdata.get("houseBuildingName");
     const roadarealandmarkName = formdata.get("roadarealandmarkName");
-    const farmNumber = formdata.get("farmNumber");
-    const farmArea = formdata.get("farmArea");
-    const farmUnit = formdata.get("farmUnit");
     const aadharUrl = formdata.get("aadharUrl");
-    const farmDocUrl = formdata.get("farmDocUrl");
 
-    await farmeraccount.create<IAccount>({
+    await buyeraccount.create<IAccount>({
       farmerId,
       firstName,
       lastName,
@@ -71,14 +58,10 @@ export async function POST(request: NextRequest) {
       village,
       houseBuildingName,
       roadarealandmarkName,
-      farmNumber,
-      farmArea,
-      farmUnit,
       aadharUrl,
-      farmDocUrl
     });
 
-    return NextResponse.json({ status: "Profile created successfully ✅" })
+    return NextResponse.json({ status: "Profile created successfully ✅" });
   } catch {
     return NextResponse.json(
       { error: "Failed to fetch profile ❌" },

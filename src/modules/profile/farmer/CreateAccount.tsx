@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -260,6 +260,11 @@ export default function CreateAccount() {
         farmDocUrl = await uploadToImageKit(form.farmdoc, "farmdoc");
       }
 
+      const role = "farmer"
+      user.update({
+        unsafeMetadata : {role}
+      });
+
       const formdata = new FormData();
       formdata.append("farmerId", user.id.replace(/^user_/, "fam_"));
       formdata.append("firstName", user.firstName || "");
@@ -298,17 +303,6 @@ export default function CreateAccount() {
     }
   };
 
-  // Calculate step 1 completion
-  const step1Fields = [
-    form.aadharnumber,
-    form.aadhar,
-    form.phone,
-    form.state,
-    form.district,
-    form.taluka,
-    form.village,
-  ];
-  
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-8 px-4 flex items-center justify-center">

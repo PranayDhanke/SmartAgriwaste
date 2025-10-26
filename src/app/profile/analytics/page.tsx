@@ -1,5 +1,5 @@
 
-import Analytics from '@/modules/profile/Analytics'
+import Analytics from '@/modules/profile/farmer/Analytics'
 import React from 'react'
 
 const page = () => {

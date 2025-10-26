@@ -1,8 +1,9 @@
 import { Webhook } from "svix";
 import { headers } from "next/headers";
-import Account from "@/models/account";
 import dbConnect from "@/lib/mongoDB";
 import { NextRequest, NextResponse } from "next/server";
+import buyeraccount from "@/models/buyeraccount";
+import farmeraccount from "@/models/farmeraccount";
 
 type ClerkWebhookEvent = {
   data: {
@@ -11,6 +12,7 @@ type ClerkWebhookEvent = {
     last_name?: string;
     username?: string;
     email_addresses?: { email_address: string }[];
+    unsafe_metadata?: { role?: string };
   };
   type: string;
 };
@@ -44,11 +46,13 @@ export async function POST(req: NextRequest) {
   }
 
   const { data, type } = evt;
-  const farmerId = data.id.replace("user_", "fam_");
+  const role = data.unsafe_metadata?.role;
+  const id = data.id.replace("user_", role === "buyer" ? "buy_" : "fam_");
 
+  const account = role === "buyer" ? buyeraccount : farmeraccount;
   if (type === "user.updated") {
-    await Account.findOneAndUpdate(
-      { farmerId },
+    await account.findOneAndUpdate(
+      { id },
       {
         firstName: data.first_name,
         lastName: data.last_name,
@@ -60,7 +64,7 @@ export async function POST(req: NextRequest) {
   }
 
   if (type === "user.deleted") {
-    await Account.findOneAndDelete({ farmerId });
+    await account.findOneAndDelete({ id });
   }
 
   return NextResponse.json("Webhook received", { status: 200 });

@@ -1,4 +1,4 @@
-import CreateAccount from '@/modules/profile/CreateAccount'
+import CreateAccount from '@/modules/profile/buyer/CreateAccount'
 import React from 'react'
 
 const page = () => {

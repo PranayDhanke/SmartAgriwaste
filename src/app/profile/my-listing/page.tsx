@@ -1,5 +1,4 @@
-import MyListing from '@/modules/profile/MyListing'
-import React from 'react'
+import MyListing from "@/modules/profile/farmer/MyListing"
 
 const page = () => {
   return (

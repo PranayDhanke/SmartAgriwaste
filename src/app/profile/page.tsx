@@ -1,5 +1,4 @@
-import Profile from '@/modules/profile/Profile'
-import React from 'react'
+import Profile from "@/modules/profile/farmer/Profile"
 
 const page = () => {
   return (

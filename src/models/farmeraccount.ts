@@ -3,7 +3,7 @@ import mongoose, { Schema } from "mongoose";
 type FarmUnit = "hectare" | "acre";
 
 interface IAccount {
-  farmerId: string; 
+  farmerId: string;
   firstName: string;
   lastName: string;
   username: string;
@@ -29,7 +29,7 @@ interface IAccount {
   farmUnit: FarmUnit;
 }
 
-const AccountSchema = new Schema<IAccount>(
+const FarmerAccountSchema = new Schema<IAccount>(
   {
     farmerId: { type: String, required: true, unique: true },
     firstName: { type: String, required: true },
@@ -59,5 +59,5 @@ const AccountSchema = new Schema<IAccount>(
   { timestamps: true }
 );
 
-export default mongoose.models.Account ||
-  mongoose.model("Account", AccountSchema);
+export default mongoose.models.FarmerAccount ||
+  mongoose.model("FarmerAccount", FarmerAccountSchema);

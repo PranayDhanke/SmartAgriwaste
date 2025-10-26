@@ -34,6 +34,8 @@ import {
   FiSettings,
   FiLogOut,
 } from "react-icons/fi";
+import { Avatar, AvatarImage } from "@/components/ui/avatar";
+import { AvatarFallback } from "@radix-ui/react-avatar";
 
 const Header = () => {
   const { isSignedIn, user } = useUser();
@@ -42,11 +44,36 @@ const Header = () => {
 
   const navigationItems = [
     { onloggedIn: false, title: "Home", href: "/", icon: FiHome },
-    { onloggedIn: false, title: "Marketplace", href: "/marketplace", icon: FiShoppingCart },
-    { onloggedIn: true, title: "My Listings", href: "/profile/my-listing", icon: FiPackage },
-    { onloggedIn: true, title: "Orders", href: "/profile/my-orders", icon: FiDollarSign },
-    { onloggedIn: true, title: "Analytics", href: "/profile/analytics", icon: FiTrendingUp },
-    { onloggedIn: false, title: "Community", href: "/community", icon: FiUsers },
+    {
+      onloggedIn: false,
+      title: "Marketplace",
+      href: "/marketplace",
+      icon: FiShoppingCart,
+    },
+    {
+      onloggedIn: true,
+      title: "My Listings",
+      href: "/profile/my-listing",
+      icon: FiPackage,
+    },
+    {
+      onloggedIn: true,
+      title: "Orders",
+      href: "/profile/my-orders",
+      icon: FiDollarSign,
+    },
+    {
+      onloggedIn: true,
+      title: "Analytics",
+      href: "/profile/analytics",
+      icon: FiTrendingUp,
+    },
+    {
+      onloggedIn: false,
+      title: "Community",
+      href: "/community",
+      icon: FiUsers,
+    },
   ];
 
   return (
@@ -59,7 +86,9 @@ const Header = () => {
           </div>
           <div className="flex flex-col">
             <span className="text-xl font-bold text-green-700">AgriWaste</span>
-            <span className="text-xs text-gray-500 hidden sm:block">Marketplace</span>
+            <span className="text-xs text-gray-500 hidden sm:block">
+              Marketplace
+            </span>
           </div>
         </Link>
 
@@ -100,15 +129,14 @@ const Header = () => {
                 </Badge>
               </Button>
 
-              {/* Custom Profile Dropdown */}
+              {/* Profile Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 hover:bg-green-100 transition">
-                    <img
-                      src={user?.imageUrl}
-                      alt="User Avatar"
-                      className="w-8 h-8 rounded-full"
-                    />
+                    <Avatar className="w-8 h-8 rounded-full">
+                      <AvatarImage src={user.imageUrl} alt="@shadcn" />
+                      <AvatarFallback>CN</AvatarFallback>
+                    </Avatar>
                     <span className="text-sm font-medium text-green-700 hidden sm:block">
                       {user?.firstName || "Profile"}
                     </span>
@@ -121,10 +149,12 @@ const Header = () => {
                     <FiUser className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <FiSettings className="mr-2 h-4 w-4" />
-                    Settings
-                  </DropdownMenuItem>
+                  <Link href={"/profile"}>
+                    <DropdownMenuItem>
+                      <FiSettings className="mr-2 h-4 w-4" />
+                      Settings
+                    </DropdownMenuItem>
+                  </Link>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => signOut({ redirectUrl: "/" })}
@@ -138,12 +168,27 @@ const Header = () => {
             </>
           ) : (
             <>
+              {/* Login Dropdown */}
               <Link href={"/sign-in"}>
-                <Button variant="secondary">Login</Button>
+                <Button>Login</Button>
               </Link>
-              <Link href={"/sign-up"}>
-                <Button>Sign Up</Button>
-              </Link>
+
+              {/* Sign Up Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button>Sign Up</Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Register as</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <Link href="/sign-up?role=farmer">
+                    <DropdownMenuItem>Farmer</DropdownMenuItem>
+                  </Link>
+                  <Link href="/sign-up?role=buyer">
+                    <DropdownMenuItem>Buyer</DropdownMenuItem>
+                  </Link>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </>
           )}
 
