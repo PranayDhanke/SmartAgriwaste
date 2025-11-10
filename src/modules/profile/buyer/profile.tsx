@@ -27,11 +27,7 @@ const formSchema = z.object({
   village: z.string().optional(),
   houseBuildingName: z.string().optional(),
   roadarealandmarkName: z.string().optional(),
-  farmNumber: z.string().optional(),
-  farmArea: z.string().optional(),
-  farmUnit: z.string().optional(),
   aadharUrl: z.string().optional(),
-  farmDocUrl: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -46,9 +42,6 @@ const fieldLabels: Record<string, string> = {
   village: "Village",
   houseBuildingName: "House/Building Name",
   roadarealandmarkName: "Road, Area, Landmark Name",
-  farmNumber: "Farm Number",
-  farmArea: "Farm Area",
-  farmUnit: "Farm Unit",
 };
 
 export default function Profile() {
@@ -61,31 +54,23 @@ export default function Profile() {
   });
 
   const [aadharPreview, setAadharPreview] = useState<string | null>(null);
-  const [farmDocPreview, setFarmDocPreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const [files, setFiles] = useState<{
-    aadharFile: File | null;
-    farmdocFile: File | null;
-  }>({
-    aadharFile: null,
-    farmdocFile: null,
-  });
+  const buyerId = user ? user.id.replace("user_", "buy_") : "";
 
-  const farmerId = user ? user.id.replace("user_", "fam_") : "";
+  const [aadharFile, setAadharFile] = useState<File | null>(null);
 
   // Fetch data from API when component mounts
   useEffect(() => {
-    if (!farmerId) return;
+    if (!buyerId) return;
 
-    async function fetchFarmerData() {
+    async function fetchBuyerData() {
       try {
-        const response = await fetch(`/api/profile/farmer/get/${farmerId}`);
+        const response = await fetch(`/api/profile/buyer/get/${buyerId}`);
         if (!response.ok) {
-          router.push("/create-account/farmer");
+          router.push("/create-account/buyer");
           throw new Error("Failed to fetch profile data");
         }
-
         const resdata = await response.json();
         const data = await resdata.accountdata;
 
@@ -98,15 +83,10 @@ export default function Profile() {
           village: data.village || "",
           houseBuildingName: data.houseBuildingName || "",
           roadarealandmarkName: data.roadarealandmarkName || "",
-          farmNumber: data.farmNumber || "",
-          farmArea: data.farmArea || "",
-          farmUnit: data.farmUnit || "",
           aadharUrl: data.aadharUrl || "",
-          farmDocUrl: data.farmDocUrl || "",
         });
 
         if (data.aadharUrl) setAadharPreview(data.aadharUrl);
-        if (data.farmDocUrl) setFarmDocPreview(data.farmDocUrl);
       } catch (error) {
         console.error(error);
       } finally {
@@ -114,8 +94,8 @@ export default function Profile() {
       }
     }
 
-    fetchFarmerData();
-  }, [farmerId, form, router]);
+    fetchBuyerData();
+  }, [buyerId, form, router]);
 
   const handleFileChange = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -124,9 +104,7 @@ export default function Profile() {
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
-    setFiles({ ...files, [e.target.name]: file });
-
+    setAadharFile(file);
     const reader = new FileReader();
     reader.onloadend = () => {
       setPreview(reader.result as string);
@@ -138,7 +116,7 @@ export default function Profile() {
   const uploadToImageKit = async (file: File, folder: string) => {
     const formdata = new FormData();
     formdata.append("file", file);
-    formdata.append("id", farmerId);
+    formdata.append("id", buyerId);
     formdata.append("folder", folder);
 
     const res = await fetch("/api/upload", {
@@ -153,20 +131,16 @@ export default function Profile() {
   };
 
   const onSubmit = async (values: FormValues) => {
-    
-    if (files.aadharFile) {
-      const url = await uploadToImageKit(files.aadharFile, "aadhar");
+    if (aadharFile) {
+      const url = await uploadToImageKit(aadharFile, "aadhar");
       form.setValue("aadharUrl", url);
+      values.aadharUrl = url; // ✅ Make sure it's in values before sending
     }
 
-    if (files.farmdocFile) {
-      const url = await uploadToImageKit(files.farmdocFile, "farmdoc");
-      form.setValue("farmDocUrl", url);
-    }
+    console.log("Updated buyer profile:", values);
 
-    console.log("Updated farmer profile:", values);
-    await fetch(`/api/profile/farmer/update/${farmerId}`, {
-      method: "POST",
+    await fetch(`/api/profile/buyer/update/${buyerId}`, {
+      method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(values),
     });
@@ -174,30 +148,28 @@ export default function Profile() {
 
   if (!user) return <p className="text-center py-10">Loading user...</p>;
   if (isLoading)
-    return <p className="text-center py-10">Loading farmer data...</p>;
+    return <p className="text-center py-10">Loading buyer data...</p>;
 
   return (
     <div className="container py-10">
       <Card className="max-w-4xl mx-auto border-gray-200 shadow-lg">
-        <CardHeader className="bg-green-50">
-          <CardTitle className="text-2xl font-bold text-green-700">
-            Farmer Profile
+        <CardHeader className="bg-blue-50">
+          <CardTitle className="text-2xl font-bold text-blue-700">
+            Buyer Profile
           </CardTitle>
           <p className="text-sm text-gray-600 mt-1">
-            Manage your personal and farm information
+            Manage your personal and contact information
           </p>
         </CardHeader>
 
         <CardContent className="pt-6">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-              {/* Farmer ID */}
-              <div className="bg-green-50 p-4 rounded-lg border border-green-200">
+              {/* Buyer ID */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
                 <p className="text-sm">
-                  <span className="font-semibold text-green-700">
-                    Farmer ID:
-                  </span>{" "}
-                  <span className="text-gray-700">{farmerId}</span>
+                  <span className="font-semibold text-blue-700">Buyer ID:</span>{" "}
+                  <span className="text-gray-700">{buyerId}</span>
                 </p>
               </div>
 
@@ -325,43 +297,10 @@ export default function Profile() {
 
               <hr className="border-gray-200" />
 
-              {/* Farm Details */}
+              {/* Document */}
               <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Farm Information
-                </h3>
-                <div className="grid md:grid-cols-3 gap-6">
-                  {["farmNumber", "farmArea", "farmUnit"].map((key) => (
-                    <FormField
-                      key={key}
-                      control={form.control}
-                      name={key as keyof FormValues}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel className="text-gray-700">
-                            {fieldLabels[key]}
-                          </FormLabel>
-                          <FormControl>
-                            <Input
-                              placeholder={`Enter ${fieldLabels[
-                                key
-                              ].toLowerCase()}`}
-                              {...field}
-                            />
-                          </FormControl>
-                        </FormItem>
-                      )}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              <hr className="border-gray-200" />
-
-              {/* Documents */}
-              <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4">
-                  Documents
+                  Document
                 </h3>
                 <div className="grid md:grid-cols-2 gap-8">
                   <FormField
@@ -376,7 +315,6 @@ export default function Profile() {
                           <Input
                             type="file"
                             accept="image/*"
-                            name="aadharFile"
                             onChange={(e) =>
                               handleFileChange(e, setAadharPreview, field)
                             }
@@ -396,39 +334,6 @@ export default function Profile() {
                       </FormItem>
                     )}
                   />
-
-                  <FormField
-                    control={form.control}
-                    name="farmDocUrl"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-gray-700">
-                          Farm Document
-                        </FormLabel>
-                        <FormControl>
-                          <Input
-                            type="file"
-                            accept="image/*"
-                            name="farmdocFile"
-                            onChange={(e) =>
-                              handleFileChange(e, setFarmDocPreview, field)
-                            }
-                          />
-                        </FormControl>
-                        {farmDocPreview && (
-                          <div className="mt-3">
-                            <Image
-                              src={farmDocPreview}
-                              alt="Farm document preview"
-                              className="rounded-lg border-2 border-gray-200 shadow-sm"
-                              width={200}
-                              height={120}
-                            />
-                          </div>
-                        )}
-                      </FormItem>
-                    )}
-                  />
                 </div>
               </div>
 
@@ -436,7 +341,7 @@ export default function Profile() {
               <div className="flex justify-end pt-4">
                 <Button
                   type="submit"
-                  className="bg-green-600 hover:bg-green-700 text-white px-8 py-6 text-base font-semibold"
+                  className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-6 text-base font-semibold"
                 >
                   Save Changes
                 </Button>

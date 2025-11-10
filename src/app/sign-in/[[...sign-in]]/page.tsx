@@ -5,5 +5,5 @@ export default function Page() {
     <div className="flex justify-center items-center h-screen">
       <SignIn  path="/sign-in" routing="path"  />
     </div>
-  );
+  ); 
 }

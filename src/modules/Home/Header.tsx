@@ -42,39 +42,51 @@ const Header = () => {
   const { signOut, openUserProfile } = useClerk();
   const [isOpen, setIsOpen] = useState(false);
 
-  const navigationItems = [
-    { onloggedIn: false, title: "Home", href: "/", icon: FiHome },
+  const role = user?.unsafeMetadata?.role || "farmer";// "farmer" or "buyer"
+
+  // Farmer Navigation
+  const farmerNav = [
+    { title: "Home", href: "/", icon: FiHome },
+    { title: "Marketplace", href: "/marketplace", icon: FiShoppingCart },
     {
-      onloggedIn: false,
-      title: "Marketplace",
-      href: "/marketplace",
-      icon: FiShoppingCart,
-    },
-    {
-      onloggedIn: true,
       title: "My Listings",
-      href: "/profile/my-listing",
+      href: "/profile/farmer/my-listing",
       icon: FiPackage,
     },
+    { title: "Orders", href: "/profile/farmer/my-orders", icon: FiDollarSign },
     {
-      onloggedIn: true,
-      title: "Orders",
-      href: "/profile/my-orders",
-      icon: FiDollarSign,
-    },
-    {
-      onloggedIn: true,
       title: "Analytics",
-      href: "/profile/analytics",
+      href: "/profile/farmer/analytics",
       icon: FiTrendingUp,
     },
-    {
-      onloggedIn: false,
-      title: "Community",
-      href: "/community",
-      icon: FiUsers,
-    },
+    { title: "Community", href: "/community", icon: FiUsers },
   ];
+
+  // Buyer Navigation
+  const buyerNav = [
+    { title: "Home", href: "/", icon: FiHome },
+    { title: "Marketplace", href: "/marketplace", icon: FiShoppingCart },
+    {
+      title: "My Purchases",
+      href: "/profile/buyer/my-purchases",
+      icon: FiPackage,
+    },
+    { title: "Community", href: "/community", icon: FiUsers },
+  ];
+
+  // Default Navigation (not signed in)
+  const defaultNav = [
+    { title: "Home", href: "/", icon: FiHome },
+    { title: "Marketplace", href: "/marketplace", icon: FiShoppingCart },
+    { title: "Community", href: "/community", icon: FiUsers },
+  ];
+
+  // Choose navigation based on role
+  const navigationItems = !isSignedIn
+    ? defaultNav
+    : role === "farmer"
+    ? farmerNav
+    : buyerNav;
 
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white/95 backdrop-blur shadow-sm">
@@ -94,30 +106,30 @@ const Header = () => {
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
-          {navigationItems
-            .filter((item) => (isSignedIn ? true : !item.onloggedIn))
-            .map((item) => (
-              <Link
-                key={item.href}
-                href={item.href}
-                className="flex items-center space-x-1 text-sm font-medium text-gray-600 hover:text-green-600 transition-colors"
-              >
-                <item.icon className="h-4 w-4" />
-                <span>{item.title}</span>
-              </Link>
-            ))}
+          {navigationItems.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="flex items-center space-x-1 text-sm font-medium text-gray-600 hover:text-green-600 transition-colors"
+            >
+              <item.icon className="h-4 w-4" />
+              <span>{item.title}</span>
+            </Link>
+          ))}
         </nav>
 
         {/* Right Actions */}
         <div className="flex items-center space-x-3">
           {isSignedIn ? (
             <>
-              <Link href={"/profile/list-waste"}>
-                <Button className="hidden sm:inline-flex bg-green-600 hover:bg-green-700 text-white">
-                  <FiPlus className="mr-2 h-4 w-4" />
-                  List Waste
-                </Button>
-              </Link>
+              {role === "farmer" && (
+                <Link href={"/profile/list-waste"}>
+                  <Button className="hidden sm:inline-flex bg-green-600 hover:bg-green-700 text-white">
+                    <FiPlus className="mr-2 h-4 w-4" />
+                    List Waste
+                  </Button>
+                </Link>
+              )}
 
               <Button variant="ghost" size="icon" className="relative">
                 <FiBell className="h-4 w-4" />
@@ -134,7 +146,14 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 hover:bg-green-100 transition">
                     <Avatar className="w-8 h-8 rounded-full">
-                      <AvatarImage src={user.imageUrl} alt="@shadcn" />
+                      {/* Use Image for optimization */}
+                      <AvatarImage
+                        src={user.imageUrl}
+                        alt={user?.firstName || "User"}
+                        width={32}
+                        height={32}
+                        className="rounded-full"
+                      />
                       <AvatarFallback>CN</AvatarFallback>
                     </Avatar>
                     <span className="text-sm font-medium text-green-700 hidden sm:block">
@@ -149,7 +168,7 @@ const Header = () => {
                     <FiUser className="mr-2 h-4 w-4" />
                     Profile
                   </DropdownMenuItem>
-                  <Link href={"/profile"}>
+                  <Link href={`/profile/${role}`}>
                     <DropdownMenuItem>
                       <FiSettings className="mr-2 h-4 w-4" />
                       Settings
@@ -168,12 +187,9 @@ const Header = () => {
             </>
           ) : (
             <>
-              {/* Login Dropdown */}
               <Link href={"/sign-in"}>
                 <Button>Login</Button>
               </Link>
-
-              {/* Sign Up Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button>Sign Up</Button>
@@ -210,7 +226,7 @@ const Header = () => {
               </SheetHeader>
 
               <div className="flex flex-col space-y-4 mt-6">
-                {isSignedIn && (
+                {isSignedIn && role === "farmer" && (
                   <Link href="/profile/list-waste">
                     <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
                       <FiPlus className="mr-2 h-4 w-4" />
@@ -220,19 +236,17 @@ const Header = () => {
                 )}
 
                 <nav className="flex flex-col space-y-2">
-                  {navigationItems
-                    .filter((item) => (isSignedIn ? true : !item.onloggedIn))
-                    .map((item) => (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        onClick={() => setIsOpen(false)}
-                        className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors"
-                      >
-                        <item.icon className="h-4 w-4" />
-                        <span className="font-medium">{item.title}</span>
-                      </Link>
-                    ))}
+                  {navigationItems.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setIsOpen(false)}
+                      className="flex items-center space-x-3 px-3 py-2 rounded-md text-gray-700 hover:bg-green-50 hover:text-green-700 transition-colors"
+                    >
+                      <item.icon className="h-4 w-4" />
+                      <span className="font-medium">{item.title}</span>
+                    </Link>
+                  ))}
                 </nav>
               </div>
             </SheetContent>

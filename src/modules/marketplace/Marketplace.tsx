@@ -29,6 +29,10 @@ import {
   Search,
   ChevronRight,
   Droplets,
+  X,
+  TrendingUp,
+  Clock,
+  Package,
 } from "lucide-react";
 import Image from "next/image";
 
@@ -45,35 +49,59 @@ interface WasteItem {
   location: string;
   description: string;
   imageUrl: string;
+  seller: {
+    name: string;
+    phone: string;
+    email: string;
+  };
 }
 
-const categoryMeta: Record<WasteType, { label: string; icon: JSX.Element; color: string }> = {
-  crop: { 
-    label: "Crop", 
-    icon: <Recycle className="h-3.5 w-3.5" />,
-    color: "bg-emerald-100 text-emerald-700 border-emerald-200"
+interface FilterState {
+  search: string;
+  category: string;
+  location: string;
+  minPrice: string;
+  maxPrice: string;
+  sortBy: string;
+}
+
+const categoryMeta: Record<
+  WasteType,
+  { label: string; icon: JSX.Element; color: string; bgColor: string }
+> = {
+  crop: {
+    label: "Crop",
+    icon: <Recycle className="h-3 w-3" />,
+    color: "text-emerald-700",
+    bgColor: "bg-emerald-100/80",
   },
-  fruit: { 
-    label: "Fruit", 
-    icon: <Leaf className="h-3.5 w-3.5" />,
-    color: "bg-orange-100 text-orange-700 border-orange-200"
+  fruit: {
+    label: "Fruit",
+    icon: <Leaf className="h-3 w-3" />,
+    color: "text-amber-700",
+    bgColor: "bg-amber-100/80",
   },
   vegetable: {
     label: "Vegetable",
-    icon: <Factory className="h-3.5 w-3.5" />,
-    color: "bg-blue-100 text-blue-700 border-blue-200"
+    icon: <Factory className="h-3 w-3" />,
+    color: "text-blue-700",
+    bgColor: "bg-blue-100/80",
   },
 };
 
 export default function Marketplace() {
   const [wastes, setWastes] = useState<WasteItem[]>([]);
-  const [search, setSearch] = useState("");
-  const [category, setCategory] = useState<string>("all");
-  const [location, setLocation] = useState("");
-  const [minPrice, setMinPrice] = useState("");
-  const [maxPrice, setMaxPrice] = useState("");
-  const [sortBy, setSortBy] = useState("recent");
+  const [filters, setFilters] = useState<FilterState>({
+    search: "",
+    category: "all",
+    location: "",
+    minPrice: "",
+    maxPrice: "",
+    sortBy: "recent",
+  });
   const [showFilters, setShowFilters] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [activeFiltersCount, setActiveFiltersCount] = useState(0);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -87,16 +115,31 @@ export default function Marketplace() {
         }
       } catch (err) {
         console.error("Error fetching data:", err);
+      } finally {
+        setLoading(false);
       }
     };
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const count = Object.entries(filters).reduce((acc, [key, value]) => {
+      if (
+        key === "sortBy" ||
+        value === "" ||
+        (key === "category" && value === "all")
+      )
+        return acc;
+      return acc + 1;
+    }, 0);
+    setActiveFiltersCount(count);
+  }, [filters]);
+
   const filtered = useMemo(() => {
     let list = [...wastes];
 
-    if (search.trim()) {
-      const q = search.toLowerCase();
+    if (filters.search.trim()) {
+      const q = filters.search.toLowerCase();
       list = list.filter(
         (p) =>
           p.title.toLowerCase().includes(q) ||
@@ -105,17 +148,17 @@ export default function Marketplace() {
       );
     }
 
-    if (category !== "all") {
-      list = list.filter((p) => p.wasteType === category);
+    if (filters.category !== "all") {
+      list = list.filter((p) => p.wasteType === filters.category);
     }
 
-    if (location.trim()) {
-      const locq = location.toLowerCase();
+    if (filters.location.trim()) {
+      const locq = filters.location.toLowerCase();
       list = list.filter((p) => p.location.toLowerCase().includes(locq));
     }
 
-    const min = minPrice ? Number(minPrice) : undefined;
-    const max = maxPrice ? Number(maxPrice) : undefined;
+    const min = filters.minPrice ? Number(filters.minPrice) : undefined;
+    const max = filters.maxPrice ? Number(filters.maxPrice) : undefined;
     list = list.filter((p) => {
       const price = parseFloat(p.price);
       if (min !== undefined && price < min) return false;
@@ -123,137 +166,233 @@ export default function Marketplace() {
       return true;
     });
 
-    if (sortBy === "price-asc")
+    if (filters.sortBy === "price-asc")
       list.sort((a, b) => parseFloat(a.price) - parseFloat(b.price));
-    if (sortBy === "price-desc")
+    if (filters.sortBy === "price-desc")
       list.sort((a, b) => parseFloat(b.price) - parseFloat(a.price));
-    if (sortBy === "name") list.sort((a, b) => a.title.localeCompare(b.title));
+    if (filters.sortBy === "name")
+      list.sort((a, b) => a.title.localeCompare(b.title));
 
     return list;
-  }, [wastes, search, category, location, minPrice, maxPrice, sortBy]);
+  }, [wastes, filters]);
 
   const handleAddToCart = (item: WasteItem) => {
     alert(`Added to cart: ${item.title}`);
   };
 
-  return (
-    <main className="min-h-screen bg-gradient-to-br from-gray-50 to-green-50/30">
-      <section className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Marketplace</h1>
-          <p className="text-gray-600">Discover agricultural waste for sustainable solutions</p>
-        </div>
+  const handleFilterChange = (key: keyof FilterState, value: string) => {
+    setFilters((prev) => ({ ...prev, [key]: value }));
+  };
 
-        {/* Search Bar */}
-        <div className="mb-4">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-            <Input
-              placeholder="Search for waste products..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 h-12 bg-white border-gray-200 focus:border-green-500"
-            />
+  const resetFilters = () => {
+    setFilters({
+      search: "",
+      category: "all",
+      location: "",
+      minPrice: "",
+      maxPrice: "",
+      sortBy: "recent",
+    });
+    setShowFilters(false);
+  };
+
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-gray-50 via-green-50/20 to-emerald-50">
+      <section className="mx-auto max-w-7xl px-4 md:px-6 py-8 md:py-12">
+        {/* Hero Header */}
+        <div className="mb-8">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-3">
+                Marketplace
+              </h1>
+              <p className="text-lg text-gray-600 max-w-2xl">
+                Connect with sustainable solutions. Buy and sell agricultural
+                waste products responsibly.
+              </p>
+            </div>
+            <div className="hidden lg:flex items-center gap-2 text-green-600 text-sm font-medium">
+              <TrendingUp className="h-4 w-4" />
+              {filtered.length} listings active
+            </div>
           </div>
         </div>
 
-        {/* Quick Filters */}
-        <div className="flex items-center gap-2 mb-6 overflow-x-auto pb-2">
+        {/* Main Search */}
+        <div className="mb-6">
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-green-500 transition-colors" />
+            <Input
+              placeholder="Search waste products, categories, or sellers..."
+              value={filters.search}
+              onChange={(e) => handleFilterChange("search", e.target.value)}
+              className="pl-12 h-14 bg-white border-2 border-gray-200 focus:border-green-500 rounded-lg text-base shadow-sm focus:shadow-md transition-all"
+            />
+            {filters.search && (
+              <button
+                onClick={() => handleFilterChange("search", "")}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Category Pills */}
+        <div className="mb-6 flex flex-wrap gap-2">
           <Button
-            variant={category === "all" ? "default" : "outline"}
+            variant={filters.category === "all" ? "default" : "outline"}
             size="sm"
-            onClick={() => setCategory("all")}
-            className={category === "all" ? "bg-green-600 hover:bg-green-700" : ""}
+            onClick={() => handleFilterChange("category", "all")}
+            className={`rounded-full ${
+              filters.category === "all"
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "border-gray-200 hover:border-green-300"
+            }`}
           >
-            All
+            All Products
           </Button>
-          <Button
-            variant={category === "crop" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setCategory("crop")}
-            className={category === "crop" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
-          >
-            <Recycle className="h-3.5 w-3.5 mr-1.5" />
-            Crops
-          </Button>
-          <Button
-            variant={category === "fruit" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setCategory("fruit")}
-            className={category === "fruit" ? "bg-orange-600 hover:bg-orange-700" : ""}
-          >
-            <Leaf className="h-3.5 w-3.5 mr-1.5" />
-            Fruits
-          </Button>
-          <Button
-            variant={category === "vegetable" ? "default" : "outline"}
-            size="sm"
-            onClick={() => setCategory("vegetable")}
-            className={category === "vegetable" ? "bg-blue-600 hover:bg-blue-700" : ""}
-          >
-            <Factory className="h-3.5 w-3.5 mr-1.5" />
-            Vegetables
-          </Button>
-          
-          <div className="ml-auto flex items-center gap-2">
+          {Object.entries(categoryMeta).map(([key, meta]) => (
             <Button
-              variant="outline"
+              key={key}
+              variant={filters.category === key ? "default" : "outline"}
+              size="sm"
+              onClick={() => handleFilterChange("category", key)}
+              className={`rounded-full flex items-center gap-2 ${
+                filters.category === key
+                  ? key === "crop"
+                    ? "bg-emerald-600 hover:bg-emerald-700"
+                    : key === "fruit"
+                    ? "bg-amber-600 hover:bg-amber-700"
+                    : "bg-blue-600 hover:bg-blue-700"
+                  : "border-gray-200 hover:border-gray-300"
+              }`}
+            >
+              {meta.icon}
+              {meta.label}
+            </Button>
+          ))}
+        </div>
+
+        {/* Filter Controls */}
+        <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={showFilters ? "default" : "outline"}
               size="sm"
               onClick={() => setShowFilters(!showFilters)}
+              className={`${
+                showFilters
+                  ? "bg-green-600 hover:bg-green-700 text-white"
+                  : "border-gray-200"
+              }`}
             >
-              <Filter className="h-3.5 w-3.5 mr-1.5" />
-              {showFilters ? "Hide" : "More"} Filters
+              <Filter className="h-4 w-4 mr-2" />
+              {showFilters ? "Hide" : "Show"} Filters
+              {activeFiltersCount > 0 && (
+                <Badge className="ml-2 bg-amber-500 hover:bg-amber-600">
+                  {activeFiltersCount}
+                </Badge>
+              )}
             </Button>
+
+            {activeFiltersCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={resetFilters}
+                className="text-gray-600 hover:text-gray-900"
+              >
+                Clear all
+              </Button>
+            )}
           </div>
+
+          <Select
+            value={filters.sortBy}
+            onValueChange={(value) => handleFilterChange("sortBy", value)}
+          >
+            <SelectTrigger className="w-full sm:w-[200px] h-10 border-gray-200">
+              <Clock className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="recent">Most Recent</SelectItem>
+              <SelectItem value="price-asc">Price: Low to High</SelectItem>
+              <SelectItem value="price-desc">Price: High to Low</SelectItem>
+              <SelectItem value="name">Name (A–Z)</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {/* Advanced Filters */}
+        {/* Advanced Filters Panel */}
         {showFilters && (
-          <div className="mb-6 rounded-xl border bg-white p-4 shadow-sm">
+          <div className="mb-6 rounded-xl border border-gray-200 bg-white p-5 shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
             <div className="grid gap-4 md:grid-cols-4">
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-gray-700">Location</Label>
+              <div className="space-y-2.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                  Location
+                </Label>
                 <Input
                   placeholder="City / District"
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="h-9"
+                  value={filters.location}
+                  onChange={(e) =>
+                    handleFilterChange("location", e.target.value)
+                  }
+                  className="h-10 border-gray-200 focus:border-green-500"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-gray-700">Min Price (₹)</Label>
+              <div className="space-y-2.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                  Min Price (₹)
+                </Label>
                 <Input
                   type="number"
                   placeholder="0"
-                  value={minPrice}
-                  onChange={(e) => setMinPrice(e.target.value)}
-                  className="h-9"
+                  value={filters.minPrice}
+                  onChange={(e) =>
+                    handleFilterChange("minPrice", e.target.value)
+                  }
+                  className="h-10 border-gray-200 focus:border-green-500"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-gray-700">Max Price (₹)</Label>
+              <div className="space-y-2.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                  Max Price (₹)
+                </Label>
                 <Input
                   type="number"
-                  placeholder="5000"
-                  value={maxPrice}
-                  onChange={(e) => setMaxPrice(e.target.value)}
-                  className="h-9"
+                  placeholder="10000"
+                  value={filters.maxPrice}
+                  onChange={(e) =>
+                    handleFilterChange("maxPrice", e.target.value)
+                  }
+                  className="h-10 border-gray-200 focus:border-green-500"
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-xs font-medium text-gray-700">Sort By</Label>
-                <Select value={sortBy} onValueChange={setSortBy}>
-                  <SelectTrigger className="h-9">
+              <div className="space-y-2.5">
+                <Label className="text-xs font-semibold text-gray-700 uppercase tracking-wide">
+                  Sort By
+                </Label>
+                <Select
+                  value={filters.sortBy}
+                  onValueChange={(value) => handleFilterChange("sortBy", value)}
+                >
+                  <SelectTrigger className="h-10 border-gray-200">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="recent">Most Recent</SelectItem>
-                    <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                    <SelectItem value="price-desc">Price: High to Low</SelectItem>
+                    <SelectItem value="price-asc">
+                      Price: Low to High
+                    </SelectItem>
+                    <SelectItem value="price-desc">
+                      Price: High to Low
+                    </SelectItem>
                     <SelectItem value="name">Name (A–Z)</SelectItem>
                   </SelectContent>
                 </Select>
@@ -262,108 +401,160 @@ export default function Marketplace() {
           </div>
         )}
 
-        {/* Results Count */}
-        <div className="mb-4 flex items-center justify-between">
+        {/* Results Info */}
+        <div className="mb-5 flex items-center justify-between flex-wrap gap-3">
           <p className="text-sm text-gray-600">
-            <span className="font-semibold text-gray-900">{filtered.length}</span> products available
+            Showing{" "}
+            <span className="font-bold text-gray-900 text-base">
+              {filtered.length}
+            </span>{" "}
+            {filtered.length === 1 ? "product" : "products"}
           </p>
-          {!showFilters && (
-            <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[160px] h-9 text-sm">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="recent">Most Recent</SelectItem>
-                <SelectItem value="price-asc">Price: Low to High</SelectItem>
-                <SelectItem value="price-desc">Price: High to Low</SelectItem>
-                <SelectItem value="name">Name (A–Z)</SelectItem>
-              </SelectContent>
-            </Select>
+          {activeFiltersCount > 0 && (
+            <div className="text-sm text-gray-600">
+              Filters applied:{" "}
+              <span className="font-semibold text-green-600">
+                {activeFiltersCount}
+              </span>
+            </div>
           )}
         </div>
 
-        {/* Product Grid */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {filtered.map((p) => (
-            <Card key={p._id} className="group overflow-hidden border-0 shadow-sm hover:shadow-lg transition-all duration-200 bg-white">
-              {/* Image */}
-              <div className="relative h-40 w-full overflow-hidden bg-gray-100">
-                {p.imageUrl ? (
-                  <Image 
-                    src={p.imageUrl} 
-                    alt={p.title} 
-                    fill 
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                ) : (
-                  <div className="h-full w-full flex items-center justify-center">
-                    <Leaf className="h-12 w-12 text-gray-300" />
-                  </div>
-                )}
-                <div className="absolute top-2 right-2">
-                  <Badge className={`${categoryMeta[p.wasteType].color} border text-xs font-medium px-2 py-0.5`}>
-                    {categoryMeta[p.wasteType].label}
-                  </Badge>
-                </div>
-              </div>
-
-              <CardHeader className="-mb-4">
-                <div className="space-y-1">
-                  <h3 className="font-semibold text-sm text-gray-900 line-clamp-1">
-                    {p.title}
-                  </h3>
-                  <p className="text-xs text-gray-500 line-clamp-1">{p.wasteProduct}</p>
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
-                    <MapPin className="h-3 w-3" />
-                    <span className="line-clamp-1">{p.location}</span>
-                  </div>
-                </div>
-              </CardHeader>
-
-              <CardContent className=" space-y-2">
-                <p className="text-xs text-gray-600 line-clamp-2">{p.description}</p>
-                
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-lg font-bold text-green-600">₹{p.price}</span>
-                    <span className="text-xs text-gray-500"> /unit</span>
-                  </div>
-                  <Badge variant="outline" className="text-xs gap-1">
-                    <Droplets className="h-3 w-3" />
-                    {p.moisture}
-                  </Badge>
-                </div>
-              </CardContent>
-
-              <CardFooter className="p-3 pt-0 flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1 h-8 text-xs"
-                  onClick={() => handleAddToCart(p)}
+        {/* Compact Product Grid */}
+        {!loading ? (
+          filtered.length > 0 ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {filtered.map((p) => (
+                <Card
+                  key={p._id}
+                  className="group relative overflow-hidden border border-gray-200/60 shadow-sm hover:shadow-lg hover:border-green-300/50 transition-all duration-300 bg-white rounded-xl"
                 >
-                  <ShoppingCart className="h-3.5 w-3.5 mr-1" />
-                  Add
-                </Button>
-                <Link href={`/marketplace/${p._id}`} className="flex-1">
-                  <Button 
-                    size="sm" 
-                    className="w-full h-8 text-xs bg-green-600 hover:bg-green-700"
-                  >
-                    Details
-                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
-                  </Button>
-                </Link>
-              </CardFooter>
-            </Card>
-          ))}
-        </div>
+                  {/* Compact Image Container */}
+                  <div className="relative h-36 w-full overflow-hidden">
+                    {p.imageUrl ? (
+                      <Image
+                        src={p.imageUrl}
+                        alt={p.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                        <Package className="h-10 w-10 text-gray-300" />
+                      </div>
+                    )}
 
-        {filtered.length === 0 && (
-          <div className="mt-10 rounded-xl bg-white p-12 text-center border">
-            <Leaf className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No products found</h3>
-            <p className="text-gray-600 text-sm">Try adjusting your search or filters</p>
+                    {/* Overlay Gradient */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+
+                    {/* Compact Category Badge */}
+                    <div className="absolute top-2 right-2">
+                      <div
+                        className={`${categoryMeta[p.wasteType].bgColor} ${
+                          categoryMeta[p.wasteType].color
+                        } backdrop-blur-sm rounded-md px-2 py-0.5 text-[10px] font-semibold flex items-center gap-1`}
+                      >
+                        {categoryMeta[p.wasteType].icon}
+                        {categoryMeta[p.wasteType].label}
+                      </div>
+                    </div>
+
+                    {/* Price Badge Overlay */}
+                    <div className="absolute bottom-2 left-2">
+                      <div className="bg-white/95 backdrop-blur-sm rounded-lg px-2.5 py-1 shadow-sm">
+                        <span className="text-base font-bold text-green-600">
+                          ₹{p.price}
+                        </span>
+                        <span className="text-[10px] text-gray-600">/unit</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Compact Content */}
+                  <div className="p-3 space-y-2">
+                    {/* Title & Product Type */}
+                    <div className="space-y-0.5">
+                      <h3 className="font-semibold text-sm text-gray-900 line-clamp-1 leading-tight">
+                        {p.title}
+                      </h3>
+                      <p className="text-xs text-gray-500">{p.wasteProduct}</p>
+                    </div>
+
+                    {/* Location */}
+                    <div className="flex items-center gap-1 text-xs text-gray-600">
+                      <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" />
+                      <span className="line-clamp-1">{p.location}</span>
+                    </div>
+
+                    {/* Info Row */}
+                    <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center gap-1 text-xs text-gray-600">
+                        <Droplets className="h-3 w-3 text-blue-500" />
+                        <span>{p.moisture}</span>
+                      </div>
+                      <div className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                        <Package className="h-3 w-3" />
+                        <span>{p.quantity}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Compact Action Buttons */}
+                  <div className="px-3 pb-3 flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 h-8 text-xs font-medium border-gray-200 hover:bg-gray-50 hover:border-gray-300"
+                      onClick={() => handleAddToCart(p)}
+                    >
+                      <ShoppingCart className="h-3.5 w-3.5 mr-1" />
+                      Cart
+                    </Button>
+                    <Link href={`/marketplace/${p._id}`} className="flex-1">
+                      <Button
+                        size="sm"
+                        className="w-full h-8 text-xs font-medium bg-green-600 hover:bg-green-700 text-white"
+                      >
+                        View
+                        <ChevronRight className="h-3.5 w-3.5 ml-0.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="mt-12 rounded-2xl bg-white p-16 text-center border border-gray-200">
+              <div className="inline-flex items-center justify-center h-20 w-20 rounded-full bg-gray-100 mb-6">
+                <Leaf className="h-10 w-10 text-gray-400" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">
+                No products found
+              </h3>
+              <p className="text-gray-600 mb-6">
+                Try adjusting your search filters or explore other categories
+              </p>
+              <Button
+                variant="outline"
+                onClick={resetFilters}
+                className="border-gray-300 hover:border-green-300"
+              >
+                Clear Filters
+              </Button>
+            </div>
+          )
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Array.from({ length: 8 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden border-gray-200">
+                <div className="h-36 bg-gray-200 animate-pulse" />
+                <div className="p-3 space-y-2">
+                  <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4" />
+                  <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                  <div className="h-3 bg-gray-200 rounded animate-pulse w-full" />
+                </div>
+              </Card>
+            ))}
           </div>
         )}
       </section>

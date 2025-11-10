@@ -1,9 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { redirect, useRouter } from "next/navigation";
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardContent,
+  CardDescription,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -17,7 +23,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Leaf, Upload, CheckCircle2, Info, ImageIcon, Loader2 } from "lucide-react";
+import {
+  Leaf,
+  Upload,
+  CheckCircle2,
+  Info,
+  ImageIcon,
+  Loader2,
+} from "lucide-react";
 import ProductList from "@/../public/Products/Product.json";
 import Image from "next/image";
 
@@ -32,6 +45,11 @@ interface WasteFormData {
   price: string;
   description: string;
   image: File | null;
+  seller: {
+    name: string;
+    phone: string;
+    email: string;
+  };
 }
 
 export default function ListWaste() {
@@ -47,12 +65,17 @@ export default function ListWaste() {
     price: "",
     description: "",
     image: null,
+    seller: {
+      name: "",
+      phone: "",
+      email: "",
+    },
   });
 
   const [loading, setLoading] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  
+
   // Calculate form completion percentage
   const calculateProgress = () => {
     const fields = Object.entries(formData);
@@ -67,10 +90,34 @@ export default function ListWaste() {
     redirect("/sign-in");
   }
 
+  useEffect(() => {
+    const sellerInfo = async () => {
+      if (user) {
+        const res = await fetch(
+          `/api/profile/farmer/get/${user.id.replace(/^user_/, "fam_")}`
+        );
+        const data = await res.json();
+
+        const farmerData = data.accountdata;
+
+        setFormData((prev) => ({
+          ...prev,
+          seller: {
+            email: farmerData.email,
+            name: farmerData.firstName + " " + farmerData.lastName,
+            phone: farmerData.phone,
+          },
+        }));
+      }
+    };
+
+    sellerInfo();
+  }, []);
+
   // Inline validation
   const validateField = (name: string, value: string) => {
     const newErrors = { ...errors };
-    
+
     switch (name) {
       case "title":
         if (value.length < 3) {
@@ -94,7 +141,7 @@ export default function ListWaste() {
         }
         break;
     }
-    
+
     setErrors(newErrors);
   };
 
@@ -132,7 +179,9 @@ export default function ListWaste() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           base64: imageBase64,
-          fileName: `${user?.id.replace(/^user_/, "fam_")}_${formData.wasteProduct}`,
+          fileName: `${user?.id.replace(/^user_/, "fam_")}_${
+            formData.wasteProduct
+          }`,
         }),
       });
 
@@ -159,7 +208,7 @@ export default function ListWaste() {
       } else {
         throw new Error("Failed to list waste");
       }
-    } catch  {
+    } catch {
       setErrors({ submit: "Something went wrong. Please try again." });
     } finally {
       setLoading(false);
@@ -218,7 +267,9 @@ export default function ListWaste() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-green-100">
                   <Info className="h-4 w-4 text-green-600" />
-                  <h3 className="font-semibold text-green-900">Basic Information</h3>
+                  <h3 className="font-semibold text-green-900">
+                    Basic Information
+                  </h3>
                 </div>
 
                 {/* Title */}
@@ -255,14 +306,20 @@ export default function ListWaste() {
                     <Select
                       required
                       onValueChange={(value: WasteType) =>
-                        setFormData({ ...formData, wasteType: value, wasteProduct: "" })
+                        setFormData({
+                          ...formData,
+                          wasteType: value,
+                          wasteProduct: "",
+                        })
                       }
                       value={formData.wasteType}
                     >
-                      <SelectTrigger 
+                      <SelectTrigger
                         id="wasteType"
                         className={`h-12 transition-all ${
-                          formData.wasteType ? "border-green-300 bg-green-50/30" : ""
+                          formData.wasteType
+                            ? "border-green-300 bg-green-50/30"
+                            : ""
                         }`}
                       >
                         <SelectValue placeholder="Choose category" />
@@ -287,23 +344,31 @@ export default function ListWaste() {
                       }
                       value={formData.wasteProduct}
                     >
-                      <SelectTrigger 
+                      <SelectTrigger
                         id="product"
                         className={`h-12 transition-all ${
-                          formData.wasteProduct ? "border-green-300 bg-green-50/30" : ""
+                          formData.wasteProduct
+                            ? "border-green-300 bg-green-50/30"
+                            : ""
                         } ${!formData.wasteType ? "opacity-50" : ""}`}
                       >
-                        <SelectValue placeholder={
-                          formData.wasteType ? "Select product" : "Select category first"
-                        } />
+                        <SelectValue
+                          placeholder={
+                            formData.wasteType
+                              ? "Select product"
+                              : "Select category first"
+                          }
+                        />
                       </SelectTrigger>
                       <SelectContent>
                         {formData.wasteType &&
-                          ProductList[formData.wasteType].map((item: string) => (
-                            <SelectItem key={item} value={item}>
-                              {item}
-                            </SelectItem>
-                          ))}
+                          ProductList[formData.wasteType].map(
+                            (item: string) => (
+                              <SelectItem key={item} value={item}>
+                                {item}
+                              </SelectItem>
+                            )
+                          )}
                       </SelectContent>
                     </Select>
                   </div>
@@ -314,7 +379,9 @@ export default function ListWaste() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-green-100">
                   <CheckCircle2 className="h-4 w-4 text-green-600" />
-                  <h3 className="font-semibold text-green-900">Specifications</h3>
+                  <h3 className="font-semibold text-green-900">
+                    Specifications
+                  </h3>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2">
@@ -333,7 +400,9 @@ export default function ListWaste() {
                         validateField("quantity", e.target.value);
                       }}
                       className={`h-12 transition-all ${
-                        formData.quantity ? "border-green-300 bg-green-50/30" : ""
+                        formData.quantity
+                          ? "border-green-300 bg-green-50/30"
+                          : ""
                       } ${errors.quantity ? "border-red-500" : ""}`}
                     />
                     {errors.quantity && (
@@ -355,10 +424,12 @@ export default function ListWaste() {
                       }
                       value={formData.moisture}
                     >
-                      <SelectTrigger 
+                      <SelectTrigger
                         id="moisture"
                         className={`h-12 transition-all ${
-                          formData.moisture ? "border-green-300 bg-green-50/30" : ""
+                          formData.moisture
+                            ? "border-green-300 bg-green-50/30"
+                            : ""
                         }`}
                       >
                         <SelectValue placeholder="Select moisture level" />
@@ -396,7 +467,8 @@ export default function ListWaste() {
                     </p>
                   )}
                   <p className="text-xs text-gray-500">
-                    Provide your expected price with unit (per ton, per kg, etc.)
+                    Provide your expected price with unit (per ton, per kg,
+                    etc.)
                   </p>
                 </div>
 
@@ -415,7 +487,9 @@ export default function ListWaste() {
                     }
                     rows={5}
                     className={`resize-none transition-all ${
-                      formData.description ? "border-green-300 bg-green-50/30" : ""
+                      formData.description
+                        ? "border-green-300 bg-green-50/30"
+                        : ""
                     }`}
                   />
                   <p className="text-xs text-gray-500 text-right">
@@ -428,24 +502,22 @@ export default function ListWaste() {
               <div className="space-y-4">
                 <div className="flex items-center gap-2 pb-2 border-b border-green-100">
                   <ImageIcon className="h-4 w-4 text-green-600" />
-                  <h3 className="font-semibold text-green-900">Product Image</h3>
+                  <h3 className="font-semibold text-green-900">
+                    Product Image
+                  </h3>
                 </div>
 
                 <div className="space-y-3">
                   <Label htmlFor="image" className="text-sm font-medium">
                     Upload Photo <span className="text-red-500">*</span>
                   </Label>
-                  
+
                   {imagePreview ? (
                     <div className="relative group w-full h-64 object-cover rounded-lg border-2 border-green-200">
-                      <Image
-                        src={imagePreview}
-                        alt="Preview"
-                        fill
-                      />
+                      <Image src={imagePreview} alt="Preview" fill />
                       <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                        <Label 
-                          htmlFor="image" 
+                        <Label
+                          htmlFor="image"
                           className="cursor-pointer bg-white text-green-700 px-4 py-2 rounded-lg font-medium hover:bg-green-50 transition-colors"
                         >
                           Change Image
@@ -453,20 +525,23 @@ export default function ListWaste() {
                       </div>
                     </div>
                   ) : (
-                    <Label 
+                    <Label
                       htmlFor="image"
                       className="flex flex-col items-center justify-center w-full h-64 border-2 border-dashed border-green-300 rounded-lg cursor-pointer hover:bg-green-50/50 transition-all group"
                     >
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <Upload className="h-12 w-12 text-green-400 mb-3 group-hover:scale-110 transition-transform" />
                         <p className="mb-2 text-sm text-gray-600">
-                          <span className="font-semibold">Click to upload</span> or drag and drop
+                          <span className="font-semibold">Click to upload</span>{" "}
+                          or drag and drop
                         </p>
-                        <p className="text-xs text-gray-500">PNG, JPG or JPEG (MAX. 5MB)</p>
+                        <p className="text-xs text-gray-500">
+                          PNG, JPG or JPEG (MAX. 5MB)
+                        </p>
                       </div>
                     </Label>
                   )}
-                  
+
                   <Input
                     id="image"
                     type="file"
@@ -475,7 +550,7 @@ export default function ListWaste() {
                     onChange={handleImageChange}
                     className="hidden"
                   />
-                  
+
                   {errors.image && (
                     <Alert variant="destructive">
                       <AlertDescription>{errors.image}</AlertDescription>
@@ -492,8 +567,8 @@ export default function ListWaste() {
               )}
 
               {/* Submit Button */}
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={loading}
                 className="w-full h-14 text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 shadow-lg hover:shadow-xl transition-all"
               >
@@ -512,7 +587,8 @@ export default function ListWaste() {
 
               {/* Help Text */}
               <p className="text-center text-sm text-gray-500">
-                By submitting, you agree to our terms of service and privacy policy
+                By submitting, you agree to our terms of service and privacy
+                policy
               </p>
             </form>
           </CardContent>

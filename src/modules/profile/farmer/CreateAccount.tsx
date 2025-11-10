@@ -204,7 +204,7 @@ export default function CreateAccount() {
   const uploadToImageKit = async (file: File, folder: string) => {
     const data = new FormData();
     data.append("file", file);
-    data.append("farmerid", user.id.replace(/^user_/, "fam_"));
+    data.append("id", user.id.replace(/^user_/, "fam_"));
     data.append("folder", folder);
 
     const res = await fetch(`/api/upload`, {
@@ -285,7 +285,7 @@ export default function CreateAccount() {
       formdata.append("aadharUrl", aadharUrl);
       formdata.append("farmDocUrl", farmDocUrl);
 
-      const res = await fetch("/api/profile", {
+      const res = await fetch("/api/farmer/profile", {
         method: "POST",
         body: formdata,
       });

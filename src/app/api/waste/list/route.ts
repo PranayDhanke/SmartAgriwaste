@@ -14,7 +14,12 @@ interface WasteFormData {
   price: string;
   location: string;
   description: string;
-  imageUrl: string ; // base64 string
+  imageUrl: string ; 
+  seller: {
+    name: string;
+    phone: string;
+    email: string;
+  };
 }
 
 export async function POST(req: NextRequest) {

@@ -193,7 +193,7 @@ export default function CreateAccount() {
   const uploadToImageKit = async (file: File, folder: string) => {
     const data = new FormData();
     data.append("file", file);
-    data.append("buyerid", user.id.replace(/^user_/, "buy0_"));
+    data.append("id", user.id.replace(/^user_/, "buy_"));
     data.append("folder", folder);
 
     const res = await fetch(`/api/upload`, {

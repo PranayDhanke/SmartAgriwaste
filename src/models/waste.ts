@@ -13,6 +13,11 @@ interface wasteFormData {
   location: string;
   description: string;
   imageUrl: string;
+  seller: {
+    name: string;
+    phone: string;
+    email: string;
+  };
 }
 
 const wasteSchema = new mongoose.Schema<wasteFormData>({
@@ -26,6 +31,11 @@ const wasteSchema = new mongoose.Schema<wasteFormData>({
   price: { type: String, required: true },
   location: { type: String, required: true },
   imageUrl: { type: String, required: true },
+  seller:{
+    name: { type: String, required: true },
+    phone: { type: String, required: true },
+    email: { type: String, required: true },
+  }
 });
 
 const Waste = mongoose.models.Waste || mongoose.model("Waste", wasteSchema);

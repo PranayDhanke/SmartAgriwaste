@@ -4,6 +4,7 @@ import dbConnect from "@/lib/mongoDB";
 import { NextRequest, NextResponse } from "next/server";
 import buyeraccount from "@/models/buyeraccount";
 import farmeraccount from "@/models/farmeraccount";
+import ImageKit from "imagekit";
 
 type ClerkWebhookEvent = {
   data: {
@@ -16,6 +17,13 @@ type ClerkWebhookEvent = {
   };
   type: string;
 };
+
+// ✅ Initialize ImageKit
+const imagekit = new ImageKit({
+  publicKey: process.env.IMAGEKIT_PUBLIC_KEY!,
+  privateKey: process.env.IMAGEKIT_PRIVATE_KEY!,
+  urlEndpoint: process.env.IMAGEKIT_URL_ENDPOINT!,
+});
 
 export async function POST(req: NextRequest) {
   await dbConnect();
@@ -40,7 +48,7 @@ export async function POST(req: NextRequest) {
       "svix-id": svix_id,
       "svix-timestamp": svix_timestamp,
       "svix-signature": svix_signature,
-    }) as ClerkWebhookEvent; // 👈 type assertion here
+    }) as ClerkWebhookEvent;
   } catch {
     return NextResponse.json("Invalid signature", { status: 400 });
   }
@@ -50,6 +58,7 @@ export async function POST(req: NextRequest) {
   const id = data.id.replace("user_", role === "buyer" ? "buy_" : "fam_");
 
   const account = role === "buyer" ? buyeraccount : farmeraccount;
+
   if (type === "user.updated") {
     await account.findOneAndUpdate(
       { id },
@@ -65,7 +74,36 @@ export async function POST(req: NextRequest) {
 
   if (type === "user.deleted") {
     await account.findOneAndDelete({ id });
+
+    try {
+      // ✅ Delete from ImageKit
+      if (role === "buyer") {
+        await deleteImageKitFile(`aadhar/${id}.jpg`);
+      } else if (role === "farmer") {
+        await deleteImageKitFile(`aadhar/${id}.jpg`);
+        await deleteImageKitFile(`farmdoc/${id}.jpg`);
+      }
+      console.log(`🗑️ Deleted ImageKit files for ${role}: ${id}`);
+    } catch  {
+      console.error("❌ Error deleting ImageKit files:");
+    }
   }
 
   return NextResponse.json("Webhook received", { status: 200 });
+}
+
+// 🔧 Helper function to delete an ImageKit file by path
+async function deleteImageKitFile(filePath: string) {
+  const files = await imagekit.listFiles({
+    searchQuery: `name="${filePath.split("/").pop()}" AND folder="/${filePath
+      .split("/")
+      .slice(0, -1)
+      .join("/")}"`,
+    limit: 1,
+    
+  });
+
+  if (files.length > 0 && "fileId" in files[0]) {
+    await imagekit.deleteFile((files[0]).fileId);
+  }
 }

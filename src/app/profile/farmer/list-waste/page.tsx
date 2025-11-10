@@ -1,3 +1,4 @@
+
 import ListWaste from '@/modules/waste/ListWaste'
 import React from 'react'
 
