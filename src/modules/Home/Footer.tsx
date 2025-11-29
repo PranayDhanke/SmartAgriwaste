@@ -9,7 +9,7 @@ export default function Footer() {
   const role = user?.unsafeMetadata?.role || "farmer" // "farmer" or "buyer"
 
   return (
-    <footer className="bg-gradient-to-br from-green-800 to-green-900 text-white">
+    <footer className="bg-gradient-to-br from-green-800 to-green-900 text-white ">
       <div className="max-w-7xl mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
           

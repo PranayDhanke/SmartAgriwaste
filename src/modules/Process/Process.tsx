@@ -25,19 +25,8 @@ import {
   AlertTriangle,
   ChevronRight,
 } from "lucide-react";
+import { WasteForm, WasteType } from "@/components/types/ListWaste";
 
-type WasteType = "crop" | "fruit" | "vegetable";
-
-interface WasteForm {
-  wasteType: WasteType | "";
-  wasteProduct: string;
-  quantity: string;
-  moisture: string;
-  currentMethod: string;
-  intendedUse: string;
-  contamination: string;
-  notes: string;
-}
 export default function Process() {
   const [formData, setFormData] = useState<WasteForm>({
     wasteType: "",

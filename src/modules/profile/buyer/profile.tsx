@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   phone: z.string().optional(),
@@ -66,13 +68,15 @@ export default function Profile() {
 
     async function fetchBuyerData() {
       try {
-        const response = await fetch(`/api/profile/buyer/get/${buyerId}`);
-        if (!response.ok) {
+        const response = await axios.get(`/api/profile/buyer/get/${buyerId}`);
+
+        const data = response.data?.accountdata;
+
+        // If no profile → redirect to create page
+        if (!data) {
           router.push("/create-account/buyer");
-          throw new Error("Failed to fetch profile data");
+          return; // stop execution
         }
-        const resdata = await response.json();
-        const data = await resdata.accountdata;
 
         form.reset({
           phone: data.phone || "",
@@ -112,38 +116,53 @@ export default function Profile() {
     };
     reader.readAsDataURL(file);
   };
-
   const uploadToImageKit = async (file: File, folder: string) => {
-    const formdata = new FormData();
-    formdata.append("file", file);
-    formdata.append("id", buyerId);
-    formdata.append("folder", folder);
+    try {
+      const formdata = new FormData();
+      formdata.append("file", file);
+      formdata.append("id", buyerId);
+      formdata.append("folder", folder);
 
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formdata,
-    });
+      const res = await axios.post("/api/upload", formdata);
 
-    const data = await res.json();
-    const url: string = data.url;
+      if (!res.data || !res.data.url) {
+        throw new Error(`Upload failed for folder "${folder}"`);
+      }
 
-    return url;
+      return res.data.url;
+    } catch (err) {
+      console.error("Image upload failed:", err);
+      throw err; // allow onSubmit() to catch it
+    }
   };
 
   const onSubmit = async (values: FormValues) => {
-    if (aadharFile) {
-      const url = await uploadToImageKit(aadharFile, "aadhar");
-      form.setValue("aadharUrl", url);
-      values.aadharUrl = url; // ✅ Make sure it's in values before sending
+    try {
+      // Upload Aadhar if selected
+      if (aadharFile) {
+        const url = await uploadToImageKit(aadharFile, "aadhar");
+        form.setValue("aadharUrl", url);
+        values.aadharUrl = url;
+      }
+
+      console.log("Updated buyer profile:", values);
+
+      const res = await axios.post(
+        `/api/profile/buyer/update/${buyerId}`,
+        values
+      );
+
+      if (res.status >= 200 && res.status < 300) {
+        toast.success("Buyer profile updated");
+        // optional: navigate to dashboard
+        // router.push("/profile/buyer");
+      } else {
+        toast.error("Failed to update profile. Please try again.");
+      }
+    } catch (err) {
+      console.error("Profile update failed:", err);
+      toast.error("Something went wrong, please try again.");
     }
-
-    console.log("Updated buyer profile:", values);
-
-    await fetch(`/api/profile/buyer/update/${buyerId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
   };
 
   if (!user) return <p className="text-center py-10">Loading user...</p>;

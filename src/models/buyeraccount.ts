@@ -1,29 +1,9 @@
+import { BuyerAccount } from "@/components/types/buyerAccount";
 import mongoose, { Schema } from "mongoose";
 
-interface IAccount {
-  farmerId: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  email: string;
-  phone: string;
-  aadharnumber: string;
-
-  // Address
-  state: string;
-  district: string;
-  taluka: string;
-  village: string;
-  houseBuildingName: string;
-  roadarealandmarkName: string;
-
-  // Files (store only URLs in MongoDB)
-  aadharUrl: string; // Aadhaar photo
-}
-
-const BuyerAccountSchema = new Schema<IAccount>(
+const BuyerAccountSchema = new Schema<BuyerAccount>(
   {
-    farmerId: { type: String, required: true, unique: true },
+    buyerId: { type: String, required: true, unique: true },
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     username: { type: String, required: true },

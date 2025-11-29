@@ -1,15 +1,11 @@
-"use client"
-import Singlemarketplace from '@/modules/marketplace/Singlemarketplace'
-import { useParams } from 'next/navigation'
-import React from 'react'
+import Singlemarketplace from "@/modules/marketplace/Singlemarketplace";
 
-const page = () => {
-  const {id} = useParams()
+const page = ({ params }: { params: { id: string } }) => {
   return (
     <div>
-        <Singlemarketplace id={id as string} />
+      <Singlemarketplace id={params.id} />
     </div>
-  )
-}
+  );
+};
 
-export default page
+export default page;

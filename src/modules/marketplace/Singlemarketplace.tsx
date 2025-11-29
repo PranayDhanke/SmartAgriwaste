@@ -1,7 +1,6 @@
 "use client";
 
 import { JSX, useEffect, useState } from "react";
-import {  useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -26,31 +25,9 @@ import {
   TrendingUp,
   Scale,
 } from "lucide-react";
-
-interface SinglemarketplaceProps {
-  id: string;
-}
-
-type WasteType = "crop" | "fruit" | "vegetable";
-
-interface WasteItem {
-  _id: string;
-  title: string;
-  wasteType: WasteType;
-  wasteProduct: string;
-  quantity: string;
-  moisture: string;
-  price: string;
-  location: string;
-  description: string;
-  imageUrl: string;
-  createdAt?: string;
-  seller: {
-    name: string;
-    phone: string;
-    email: string;
-  };
-}
+import { WasteType } from "@/components/types/ListWaste";
+import { SingleWasteItem } from "@/components/types/marketplace";
+import axios from "axios";
 
 const categoryMeta: Record<
   WasteType,
@@ -76,8 +53,8 @@ const categoryMeta: Record<
   },
 };
 
-export default function SingleMarketplace({ id }: SinglemarketplaceProps) {
-  const [product, setProduct] = useState<WasteItem | null>(null);
+export default function SingleMarketplace({ id }: { id: string }) {
+  const [product, setProduct] = useState<SingleWasteItem | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [isFavorite, setIsFavorite] = useState(false);
@@ -85,14 +62,13 @@ export default function SingleMarketplace({ id }: SinglemarketplaceProps) {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        const res = await fetch(`/api/waste/singlewaste/${id}`);
-        if (res.ok) {
-          const data = await res.json();
-          const singleData = data.singleWaste;
-          setProduct(singleData);
-        } else {
-          console.error("Failed to fetch product");
-        }
+        const res = await axios.get(`/api/waste/singlewaste/${id}`);
+
+        // Axios auto-parses JSON → no res.json()
+        const data = res.data;
+        const singleData = data.singleWaste;
+
+        setProduct(singleData);
       } catch (err) {
         console.error("Error fetching product:", err);
       } finally {
@@ -162,7 +138,8 @@ export default function SingleMarketplace({ id }: SinglemarketplaceProps) {
               Product Not Found
             </h2>
             <p className="text-gray-600 mb-6">
-              The product you're looking for doesn't exist or has been removed.
+              The product you are looking for does not exist or has been
+              removed.
             </p>
             <Link href="/marketplace">
               <Button className="bg-green-600 hover:bg-green-700">
@@ -317,7 +294,7 @@ export default function SingleMarketplace({ id }: SinglemarketplaceProps) {
                   <div>
                     <p className="text-xs text-gray-600">Location</p>
                     <p className="text-sm font-semibold text-gray-900 line-clamp-1">
-                      {product.location}
+                      {product.address.district}
                     </p>
                   </div>
                 </CardContent>
@@ -408,7 +385,7 @@ export default function SingleMarketplace({ id }: SinglemarketplaceProps) {
             </div>
 
             {/* Seller Information */}
-            {product.seller && (
+            {product.seller.name && (
               <Card className="bg-gradient-to-br from-gray-50 to-white border-gray-200">
                 <CardContent className="p-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">

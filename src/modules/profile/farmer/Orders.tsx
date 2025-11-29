@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
-import { Package, Truck, CheckCircle, XCircle } from "lucide-react"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Package, Truck, CheckCircle, XCircle } from "lucide-react";
 
 export default function Orders() {
   const orders = [
@@ -43,22 +43,26 @@ export default function Orders() {
       status: "Cancelled",
       date: "2025-08-10",
     },
-  ]
+  ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Pending":
-        return <Badge className="bg-yellow-100 text-yellow-700">⏳ Pending</Badge>
+        return (
+          <Badge className="bg-yellow-100 text-yellow-700">⏳ Pending</Badge>
+        );
       case "Shipped":
-        return <Badge className="bg-blue-100 text-blue-700">🚚 Shipped</Badge>
+        return <Badge className="bg-blue-100 text-blue-700">🚚 Shipped</Badge>;
       case "Completed":
-        return <Badge className="bg-green-100 text-green-700">✅ Completed</Badge>
+        return (
+          <Badge className="bg-green-100 text-green-700">✅ Completed</Badge>
+        );
       case "Cancelled":
-        return <Badge className="bg-red-100 text-red-700">❌ Cancelled</Badge>
+        return <Badge className="bg-red-100 text-red-700">❌ Cancelled</Badge>;
       default:
-        return <Badge>{status}</Badge>
+        return <Badge>{status}</Badge>;
     }
-  }
+  };
 
   return (
     <main className="min-h-screen bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-8">
@@ -96,7 +100,10 @@ export default function Orders() {
 
               <div className="md:col-span-2 flex gap-3 mt-3">
                 {order.status === "Pending" && (
-                  <Button variant="outline" className="border-red-300 text-red-600 hover:bg-red-50">
+                  <Button
+                    variant="outline"
+                    className="border-red-300 text-red-600 hover:bg-red-50"
+                  >
                     <XCircle className="h-4 w-4 mr-2" /> Cancel Order
                   </Button>
                 )}
@@ -116,5 +123,5 @@ export default function Orders() {
         ))}
       </div>
     </main>
-  )
+  );
 }

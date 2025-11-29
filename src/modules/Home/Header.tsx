@@ -33,6 +33,7 @@ import {
   FiUser,
   FiSettings,
   FiLogOut,
+  FiShoppingBag,
 } from "react-icons/fi";
 import { Avatar, AvatarImage } from "@/components/ui/avatar";
 import { AvatarFallback } from "@radix-ui/react-avatar";
@@ -42,7 +43,7 @@ const Header = () => {
   const { signOut, openUserProfile } = useClerk();
   const [isOpen, setIsOpen] = useState(false);
 
-  const role = user?.unsafeMetadata?.role || "farmer";// "farmer" or "buyer"
+  const role = user?.unsafeMetadata?.role || "farmer"; // "farmer" or "buyer"
 
   // Farmer Navigation
   const farmerNav = [
@@ -123,7 +124,7 @@ const Header = () => {
           {isSignedIn ? (
             <>
               {role === "farmer" && (
-                <Link href={"/profile/list-waste"}>
+                <Link href={"/profile/farmer/list-waste"}>
                   <Button className="hidden sm:inline-flex bg-green-600 hover:bg-green-700 text-white">
                     <FiPlus className="mr-2 h-4 w-4" />
                     List Waste
@@ -146,7 +147,6 @@ const Header = () => {
                 <DropdownMenuTrigger asChild>
                   <button className="flex items-center gap-2 rounded-full bg-green-50 px-3 py-1 hover:bg-green-100 transition">
                     <Avatar className="w-8 h-8 rounded-full">
-                      {/* Use Image for optimization */}
                       <AvatarImage
                         src={user.imageUrl}
                         alt={user?.firstName || "User"}
@@ -188,20 +188,59 @@ const Header = () => {
           ) : (
             <>
               <Link href={"/sign-in"}>
-                <Button>Login</Button>
+                <Button variant="outline" className="hidden sm:inline-flex">
+                  Login
+                </Button>
               </Link>
+              
+              {/* IMPROVED SIGN UP DROPDOWN */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button>Sign Up</Button>
+                  <Button className="bg-green-600 hover:bg-green-700 text-white">
+                    <FiUser className="mr-2 h-4 w-4" />
+                    Sign Up
+                  </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Register as</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
+                <DropdownMenuContent align="end" className="w-72 p-2">
+                  <DropdownMenuLabel className="text-sm font-semibold text-gray-700 px-2 py-1.5">
+                    Join as
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator className="my-1" />
+                  
+                  {/* Farmer Option */}
                   <Link href="/sign-up?role=farmer">
-                    <DropdownMenuItem>Farmer</DropdownMenuItem>
+                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 cursor-pointer hover:bg-green-50 rounded-md transition-colors">
+                      <div className="flex items-center gap-2 w-full">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-green-100 text-green-700">
+                          <FiPackage className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">Farmer</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            Sell your agricultural waste
+                          </div>
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
                   </Link>
+
+                  <div className="h-1" />
+
+                  {/* Buyer Option */}
                   <Link href="/sign-up?role=buyer">
-                    <DropdownMenuItem>Buyer</DropdownMenuItem>
+                    <DropdownMenuItem className="flex flex-col items-start gap-1 p-3 cursor-pointer hover:bg-blue-50 rounded-md transition-colors">
+                      <div className="flex items-center gap-2 w-full">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+                          <FiShoppingBag className="h-5 w-5" />
+                        </div>
+                        <div className="flex-1">
+                          <div className="font-semibold text-gray-900">Buyer</div>
+                          <div className="text-xs text-gray-500 mt-0.5">
+                            Purchase quality agricultural materials
+                          </div>
+                        </div>
+                      </div>
+                    </DropdownMenuItem>
                   </Link>
                 </DropdownMenuContent>
               </DropdownMenu>

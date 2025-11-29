@@ -2,31 +2,25 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import {  Edit, Trash2, Search, Package, X } from "lucide-react";
+import { Edit, Trash2, Search, Package, X, LoaderCircle } from "lucide-react";
 import Image from "next/image";
-
-type WasteType = "crop" | "fruit" | "vegetable";
-
-interface WasteFormData {
-  _id: string;
-  title: string;
-  wasteType: WasteType | "";
-  wasteProduct: string;
-  quantity: string;
-  moisture: string;
-  price: string;
-  description: string;
-  imageUrl: string;
-}
+import { FarmerWasteFormData, WasteType } from "@/components/types/ListWaste";
+import axios from "axios";
+import { toast } from "sonner";
 
 export default function MyListing() {
   const { user } = useUser();
   const [search, setSearch] = useState("");
-  const [listings, setListings] = useState<WasteFormData[]>([]);
+  const [listings, setListings] = useState<FarmerWasteFormData[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedType, setSelectedType] = useState<WasteType | "all">("all");
 
@@ -37,11 +31,14 @@ export default function MyListing() {
 
       try {
         const farmerId = user.id.replace(/^user_/, "fam_");
-        const res = await fetch(`/api/waste/getid/${farmerId}`);
-        if (!res.ok) throw new Error("Failed to fetch waste data");
+        const res = await axios.get(`/api/waste/getid/${farmerId}`);
 
-        const data = await res.json();
-        setListings(data.wastedata || []);
+        if (!res.data || !res.data.wastedata) {
+          throw new Error("Failed to fetch waste data");
+        }
+
+        const data = res.data.wastedata;
+        setListings(data || []);
       } catch (err) {
         console.error("Error fetching listings:", err);
       } finally {
@@ -53,8 +50,11 @@ export default function MyListing() {
   }, [user]);
 
   const filteredListings = listings.filter((item) => {
-    const matchesSearch = item.title?.toLowerCase().includes(search.toLowerCase());
-    const matchesType = selectedType === "all" || item.wasteType === selectedType;
+    const matchesSearch = item.title
+      ?.toLowerCase()
+      .includes(search.toLowerCase());
+    const matchesType =
+      selectedType === "all" || item.wasteType === selectedType;
     return matchesSearch && matchesType;
   });
 
@@ -64,11 +64,20 @@ export default function MyListing() {
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to delete this listing?")) return;
+
     try {
-      await fetch(`/api/waste/delete/${id}`, { method: "DELETE" });
-      setListings((prev) => prev.filter((item) => item._id !== id));
-    } catch (error) {
-      console.error("Delete failed:", error);
+      // show loader if needed
+      const res = await axios.delete(`/api/waste/delete/${id}`);
+
+      if (res.status >= 200 && res.status < 300) {
+        // remove from state (assumes item._id === id)
+        setListings((prev) => prev.filter((item) => item._id !== id));
+        toast.success("Listing deleted");
+      } else {
+        toast.error("Failed to delete listing. Please try again.");
+      }
+    } catch {
+      toast.error("Delete failed. Please try again.");
     }
   };
 
@@ -84,7 +93,9 @@ export default function MyListing() {
         {/* Minimal Header */}
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Listings</h1>
-          <p className="text-gray-600">Manage your agricultural waste inventory</p>
+          <p className="text-gray-600">
+            Manage your agricultural waste inventory
+          </p>
         </div>
 
         {/* Search Bar */}
@@ -114,7 +125,9 @@ export default function MyListing() {
             variant={selectedType === "all" ? "default" : "outline"}
             size="sm"
             onClick={() => setSelectedType("all")}
-            className={selectedType === "all" ? "bg-green-600 hover:bg-green-700" : ""}
+            className={
+              selectedType === "all" ? "bg-green-600 hover:bg-green-700" : ""
+            }
           >
             All
           </Button>
@@ -122,7 +135,11 @@ export default function MyListing() {
             variant={selectedType === "crop" ? "default" : "outline"}
             size="sm"
             onClick={() => setSelectedType("crop")}
-            className={selectedType === "crop" ? "bg-emerald-600 hover:bg-emerald-700" : ""}
+            className={
+              selectedType === "crop"
+                ? "bg-emerald-600 hover:bg-emerald-700"
+                : ""
+            }
           >
             Crops
           </Button>
@@ -130,7 +147,11 @@ export default function MyListing() {
             variant={selectedType === "vegetable" ? "default" : "outline"}
             size="sm"
             onClick={() => setSelectedType("vegetable")}
-            className={selectedType === "vegetable" ? "bg-blue-600 hover:bg-blue-700" : ""}
+            className={
+              selectedType === "vegetable"
+                ? "bg-blue-600 hover:bg-blue-700"
+                : ""
+            }
           >
             Vegetables
           </Button>
@@ -138,7 +159,11 @@ export default function MyListing() {
             variant={selectedType === "fruit" ? "default" : "outline"}
             size="sm"
             onClick={() => setSelectedType("fruit")}
-            className={selectedType === "fruit" ? "bg-orange-600 hover:bg-orange-700" : ""}
+            className={
+              selectedType === "fruit"
+                ? "bg-orange-600 hover:bg-orange-700"
+                : ""
+            }
           >
             Fruits
           </Button>
@@ -147,21 +172,25 @@ export default function MyListing() {
         {/* Results Count */}
         <div className="mb-4">
           <p className="text-sm text-gray-600">
-            <span className="font-semibold text-gray-900">{filteredListings.length}</span> of{" "}
-            <span className="font-semibold">{listings.length}</span> listings
+            <span className="font-semibold text-gray-900">
+              {filteredListings.length}
+            </span>{" "}
+            of <span className="font-semibold">{listings.length}</span> listings
           </p>
         </div>
 
         {/* Loading State */}
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-green-600 mb-4"></div>
+            <LoaderCircle className="animate-spin w-12 h-12 mb-3" />
             <p className="text-gray-600 text-sm">Loading listings...</p>
           </div>
         ) : filteredListings.length === 0 ? (
           <div className="bg-white rounded-xl border p-12 text-center">
             <Package className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">No listings found</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              No listings found
+            </h3>
             <p className="text-gray-600 text-sm">
               {search || selectedType !== "all"
                 ? "Try adjusting your search or filters"
@@ -192,7 +221,9 @@ export default function MyListing() {
                   <div className="absolute top-2 right-2">
                     <Badge
                       className={`${
-                        item.wasteType ? wasteTypeBadgeColors[item.wasteType] : "bg-gray-100 text-gray-700"
+                        item.wasteType
+                          ? wasteTypeBadgeColors[item.wasteType]
+                          : "bg-gray-100 text-gray-700"
                       } border text-xs font-medium px-2 py-0.5`}
                     >
                       {item.wasteType || "Unknown"}
@@ -204,7 +235,9 @@ export default function MyListing() {
                   <h3 className="font-semibold text-sm text-gray-900 line-clamp-1">
                     {item.title}
                   </h3>
-                  <p className="text-xs text-gray-500 line-clamp-1">{item.wasteProduct}</p>
+                  <p className="text-xs text-gray-500 line-clamp-1">
+                    {item.wasteProduct}
+                  </p>
                 </CardHeader>
 
                 <CardContent className="space-y-2 -mb-3">
@@ -212,22 +245,30 @@ export default function MyListing() {
                   <div className="grid grid-cols-2 gap-2 text-xs">
                     <div>
                       <p className="text-gray-500">Quantity</p>
-                      <p className="font-medium text-gray-900">{item.quantity}</p>
+                      <p className="font-medium text-gray-900">
+                        {item.quantity}
+                      </p>
                     </div>
                     <div>
                       <p className="text-gray-500">Moisture</p>
-                      <p className="font-medium text-gray-900">{item.moisture}</p>
+                      <p className="font-medium text-gray-900">
+                        {item.moisture}
+                      </p>
                     </div>
                   </div>
 
                   {/* Price */}
                   <div className="pt-1">
-                    <span className="text-lg font-bold text-green-600">₹{item.price}</span>
+                    <span className="text-lg font-bold text-green-600">
+                      ₹{item.price}
+                    </span>
                     <span className="text-xs text-gray-500"> /unit</span>
                   </div>
 
                   {/* Description */}
-                  <p className="text-xs text-gray-600 line-clamp-2">{item.description}</p>
+                  <p className="text-xs text-gray-600 line-clamp-2">
+                    {item.description}
+                  </p>
                 </CardContent>
 
                 <CardFooter className="flex gap-2">

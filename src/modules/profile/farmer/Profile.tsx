@@ -17,6 +17,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useRouter } from "next/navigation";
+import axios from "axios";
+import { toast } from "sonner";
 
 const formSchema = z.object({
   phone: z.string().optional(),
@@ -80,14 +82,13 @@ export default function Profile() {
 
     async function fetchFarmerData() {
       try {
-        const response = await fetch(`/api/profile/farmer/get/${farmerId}`);
-        if (!response.ok) {
+        const response = await axios.get(`/api/profile/farmer/get/${farmerId}`);
+        const account = response.data?.accountdata;
+        if (!account) {
           router.push("/create-account/farmer");
-          throw new Error("Failed to fetch profile data");
+          return;
         }
-
-        const resdata = await response.json();
-        const data = await resdata.accountdata;
+        const data = account;
 
         form.reset({
           phone: data.phone || "",
@@ -141,35 +142,52 @@ export default function Profile() {
     formdata.append("id", farmerId);
     formdata.append("folder", folder);
 
-    const res = await fetch("/api/upload", {
-      method: "POST",
-      body: formdata,
-    });
+    const res = await axios.post("/api/upload", formdata);
 
-    const data = await res.json();
-    const url: string = data.url;
+    if (!res.data || !res.data.url) {
+      toast.error("Upload failed Please Try again");
+    }
+
+    const url: string = res.data.url;
 
     return url;
   };
 
-  const onSubmit = async (values: FormValues) => {
-    
-    if (files.aadharFile) {
-      const url = await uploadToImageKit(files.aadharFile, "aadhar");
-      form.setValue("aadharUrl", url);
-    }
+  const onSubmit = async () => {
+    try {
 
-    if (files.farmdocFile) {
-      const url = await uploadToImageKit(files.farmdocFile, "farmdoc");
-      form.setValue("farmDocUrl", url);
-    }
+      // Upload Aadhar if present and update the form
+      if (files.aadharFile) {
+        const aadharUrl = await uploadToImageKit(files.aadharFile, "aadhar");
+        form.setValue("aadharUrl", aadharUrl);
+      }
 
-    console.log("Updated farmer profile:", values);
-    await fetch(`/api/profile/farmer/update/${farmerId}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(values),
-    });
+      // Upload farm doc if present and update the form
+      if (files.farmdocFile) {
+        const farmDocUrl = await uploadToImageKit(files.farmdocFile, "farmdoc");
+        form.setValue("farmDocUrl", farmDocUrl);
+      }
+
+      // IMPORTANT: read the latest form values (includes urls we set above)
+      const payload = form.getValues; // or: { ...values, aadharUrl: ..., farmDocUrl: ... }
+
+      // Optional: validate farmerId
+      if (!farmerId) throw new Error("Missing farmerId");
+
+      const res = await axios.post(
+        `/api/profile/farmer/update/${farmerId}`,
+        payload
+      );
+
+      if (res.status >= 200 && res.status < 300) {
+        toast.success("Profile updated");
+        // do any post-success actions (navigate/refresh)
+      } else {
+        toast.error("Failed to update profile. Please try again.");
+      }
+    } catch {
+      toast.error("Something went wrong. Please try again.");
+    }
   };
 
   if (!user) return <p className="text-center py-10">Loading user...</p>;

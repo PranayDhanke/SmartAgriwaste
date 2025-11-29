@@ -41,7 +41,7 @@
     "**/*.tsx",
     "next-env.d.ts",
     ".next/types/**/*.ts"
-  ],
+, "test-azure.js"  ],
   "exclude": [
     "node_modules",
     ".next"

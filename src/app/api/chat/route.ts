@@ -8,21 +8,40 @@ export async function POST(req: NextRequest) {
     await dbConnect();
 
     const body = await req.json();
-
     const { userId, username, message } = body;
 
-    // Trigger event on community channel
+    if (!userId || !username || !message) {
+      return NextResponse.json(
+        { error: "Missing fields" },
+        { status: 400 }
+      );
+    }
+
+    // Generate one messageId
+    const messageId = Date.now();
+
+    // Trigger Pusher update
     await pusherServer.trigger("community", "new-message", {
       userId,
       username,
       message,
-      messageId: Date.now(),
+      messageId,
     });
 
-    await Messages.create({ userId, username, message, messageId: Date.now() });
+    // Save message to DB
+    await Messages.create({
+      userId,
+      username,
+      message,
+      messageId,
+    });
 
-    return NextResponse.json({ status: "ok" });
-  } catch {
-    return NextResponse.json({ error: "Failed to send message" });
+    return NextResponse.json({ status: "ok" }, { status: 200 });
+  } catch (err) {
+    console.error("Send message error:", err);
+    return NextResponse.json(
+      { error: "Failed to send message" },
+      { status: 500 }
+    );
   }
 }

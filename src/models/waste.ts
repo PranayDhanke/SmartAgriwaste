@@ -1,26 +1,7 @@
+import { WasteFormDataSchema } from "@/components/types/ListWaste";
 import mongoose from "mongoose";
 
-type WasteType = "crop" | "fruit" | "vegetable";
-
-interface wasteFormData {
-  farmerId: string;
-  title: string;
-  wasteType: WasteType | "";
-  wasteProduct: string;
-  quantity: string;
-  moisture: string;
-  price: string;
-  location: string;
-  description: string;
-  imageUrl: string;
-  seller: {
-    name: string;
-    phone: string;
-    email: string;
-  };
-}
-
-const wasteSchema = new mongoose.Schema<wasteFormData>({
+const wasteSchema = new mongoose.Schema<WasteFormDataSchema>({
   farmerId: { type: String, required: true },
   title: { type: String, required: true },
   wasteType: { type: String, required: true },
@@ -29,13 +10,20 @@ const wasteSchema = new mongoose.Schema<wasteFormData>({
   quantity: { type: String, required: true },
   moisture: { type: String, required: true },
   price: { type: String, required: true },
-  location: { type: String, required: true },
   imageUrl: { type: String, required: true },
-  seller:{
+  seller: {
     name: { type: String, required: true },
     phone: { type: String, required: true },
     email: { type: String, required: true },
-  }
+  },
+  address: {
+    houseBuildingName: { type: String, required: true },
+    roadarealandmarkName: { type: String, required: true },
+    state: { type: String, required: true },
+    district: { type: String, required: true },
+    taluka: { type: String, required: true },
+    village: { type: String, required: true },
+  },
 });
 
 const Waste = mongoose.models.Waste || mongoose.model("Waste", wasteSchema);

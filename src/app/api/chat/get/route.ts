@@ -5,9 +5,18 @@ import { NextResponse } from "next/server";
 export async function GET() {
   try {
     await dbConnect();
-    const messages = await Messages.find().limit(100).lean();
+
+    const messages = await Messages.find()
+      .sort({ messageId: 1 })  // oldest → newest
+      .limit(100)
+      .lean();
+
     return NextResponse.json({ messages }, { status: 200 });
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch messages" });
+  } catch (err) {
+    console.error("Failed to fetch messages:", err);
+    return NextResponse.json(
+      { error: "Failed to fetch messages" },
+      { status: 500 }
+    );
   }
 }

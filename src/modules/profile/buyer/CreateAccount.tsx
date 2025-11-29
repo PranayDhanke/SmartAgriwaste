@@ -33,6 +33,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import addressJson from "@/../public/Address.json";
+import { toast } from "sonner";
+import axios from "axios";
 
 interface AddressType {
   states: string[];
@@ -150,7 +152,7 @@ export default function CreateAccount() {
               You must be signed in to access this page
             </p>
             <Button
-              onClick={() => router.push("/sign-in")}
+              onClick={() => router.push("/sign-up?role=buyer")}
               className="w-full bg-green-600 hover:bg-green-700"
             >
               Go to Sign In
@@ -189,21 +191,19 @@ export default function CreateAccount() {
       validateField(e.target.name, file);
     }
   };
-
   const uploadToImageKit = async (file: File, folder: string) => {
-    const data = new FormData();
-    data.append("file", file);
-    data.append("id", user.id.replace(/^user_/, "buy_"));
-    data.append("folder", folder);
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("id", user.id.replace(/^user_/, "buy_"));
+    formData.append("folder", folder);
 
-    const res = await fetch(`/api/upload`, {
-      method: "POST",
-      body: data,
-    });
+    const res = await axios.post("/api/upload", formData);
 
-    if (!res.ok) throw new Error(`Failed to upload ${folder}`);
-    const result = await res.json();
-    return result.url;
+    if (!res.data || !res.data.url) {
+      throw new Error(`Failed to upload ${folder}`);
+    }
+
+    return res.data.url;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -214,6 +214,7 @@ export default function CreateAccount() {
     try {
       let aadharUrl = "";
       if (form.aadhar) {
+        toast.loading("Uploading Aadhaar...");
         aadharUrl = await uploadToImageKit(form.aadhar, "aadhar");
       }
 
@@ -233,15 +234,12 @@ export default function CreateAccount() {
       formdata.append("roadarealandmarkName", form.roadarealandmarkName);
       formdata.append("aadharUrl", aadharUrl);
 
-      const res = await fetch("/api/buyer/profile/", {
-        method: "POST",
-        body: formdata,
-      });
+      const res = await axios.post("/api/profile/buyer", formdata);
 
-      if (res.ok) {
+      if (res.status >= 200 && res.status < 300) {
         router.push("/?success=profile-created");
       } else {
-        throw new Error("Failed to save profile");
+        toast.error("Failed to create profile. Please try again.");
       }
     } catch (err) {
       console.error(err);

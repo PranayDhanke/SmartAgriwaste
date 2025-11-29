@@ -1,11 +1,6 @@
+import { Chat } from "@/components/types/chats";
 import mongoose, { Schema } from "mongoose";
 
-interface Chat {
-  messageId: string;
-  userId: string;
-  username: string;
-  message: string;
-}
 
 const messsageSchema = new Schema<Chat>({
   messageId: { type: String, required: true },

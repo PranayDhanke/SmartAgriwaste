@@ -33,24 +33,10 @@ import {
 } from "lucide-react";
 import ProductList from "@/../public/Products/Product.json";
 import Image from "next/image";
-
-type WasteType = "crop" | "fruit" | "vegetable";
-
-interface WasteFormData {
-  title: string;
-  wasteType: WasteType | "";
-  wasteProduct: string;
-  quantity: string;
-  moisture: string;
-  price: string;
-  description: string;
-  image: File | null;
-  seller: {
-    name: string;
-    phone: string;
-    email: string;
-  };
-}
+import { toast } from "sonner";
+import { WasteFormData, WasteType } from "@/components/types/ListWaste";
+import { FarmerAccount } from "@/components/types/farmerAccount";
+import axios from "axios";
 
 export default function ListWaste() {
   const { user, isLoaded } = useUser();
@@ -67,8 +53,16 @@ export default function ListWaste() {
     image: null,
     seller: {
       name: "",
-      phone: "",
       email: "",
+      phone: "",
+    },
+    address: {
+      district: "",
+      houseBuildingName: "",
+      roadarealandmarkName: "",
+      state: "",
+      taluka: "",
+      village: "",
     },
   });
 
@@ -78,41 +72,69 @@ export default function ListWaste() {
 
   // Calculate form completion percentage
   const calculateProgress = () => {
-    const fields = Object.entries(formData);
-    const filledFields = fields.filter(([key, value]) => {
-      if (key === "image") return value !== null;
-      return value !== "";
-    }).length;
-    return (filledFields / fields.length) * 100;
+    const keysToCheck = [
+      "title",
+      "wasteType",
+      "wasteProduct",
+      "quantity",
+      "moisture",
+      "price",
+      "description",
+      "image",
+    ] as const;
+
+    const isFilled = (key: (typeof keysToCheck)[number]) => {
+      const value = formData[key];
+
+      if (key === "image") {
+        return value !== null;
+      }
+
+      if (typeof value === "string") {
+        return value.trim() !== "";
+      }
+
+      return Boolean(value);
+    };
+
+    const filled = keysToCheck.filter(isFilled).length;
+    return (filled / keysToCheck.length) * 100;
   };
 
   if (isLoaded && !user) {
     redirect("/sign-in");
   }
-
   useEffect(() => {
     const sellerInfo = async () => {
-      if (user) {
-        const res = await fetch(
-          `/api/profile/farmer/get/${user.id.replace(/^user_/, "fam_")}`
-        );
-        const data = await res.json();
+      if (!user) return;
+      const res = await axios.get(
+        `/api/profile/farmer/get/${user.id.replace(/^user_/, "fam_")}`
+      );
 
-        const farmerData = data.accountdata;
+      if (!res.data) return;
 
-        setFormData((prev) => ({
-          ...prev,
-          seller: {
-            email: farmerData.email,
-            name: farmerData.firstName + " " + farmerData.lastName,
-            phone: farmerData.phone,
-          },
-        }));
-      }
+      const farmerData: FarmerAccount = res.data.accountdata;
+
+      setFormData((prev) => ({
+        ...prev,
+        address: {
+          district: farmerData.district,
+          houseBuildingName: farmerData.houseBuildingName,
+          roadarealandmarkName: farmerData.roadarealandmarkName,
+          state: farmerData.state,
+          taluka: farmerData.taluka,
+          village: farmerData.village,
+        },
+        seller: {
+          email: farmerData.email,
+          name: `${farmerData.firstName} ${farmerData.lastName}`,
+          phone: farmerData.phone,
+        },
+      }));
     };
 
     sellerInfo();
-  }, []);
+  }, [user, isLoaded]);
 
   // Inline validation
   const validateField = (name: string, value: string) => {
@@ -127,15 +149,15 @@ export default function ListWaste() {
         }
         break;
       case "quantity":
-        if (!/\d+\s*(kg|ton|tons|kgs)/i.test(value)) {
-          newErrors.quantity = "Please specify unit (e.g., kg, tons)";
+        if (value.length <= 0) {
+          newErrors.quantity = "Please Entre quantity";
         } else {
           delete newErrors.quantity;
         }
         break;
       case "price":
-        if (!/₹\s*\d+/i.test(value)) {
-          newErrors.price = "Please include ₹ symbol";
+        if (value.length <= 0) {
+          newErrors.price = "Please Entre price";
         } else {
           delete newErrors.price;
         }
@@ -174,39 +196,41 @@ export default function ListWaste() {
         reader.onload = () => resolve(reader.result as string);
       });
 
-      const uploadRes = await fetch("/api/waste/upload", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          base64: imageBase64,
-          fileName: `${user?.id.replace(/^user_/, "fam_")}_${
-            formData.wasteProduct
-          }`,
-        }),
+      toast.loading("Uploading image...");
+      const uploadRes = await axios.post("/api/waste/upload", {
+        base64: imageBase64,
+        fileName: `${user?.id.replace(/^user_/, "fam_")}_${
+          formData.wasteProduct
+        }`,
       });
 
-      const uploadData = await uploadRes.json();
+      const uploadData = uploadRes.data;
 
-      if (!uploadRes.ok || !uploadData.url) {
-        throw new Error("Image upload failed");
+      if (!uploadData || !uploadData.url) {
+        toast.error("Image upload failed. Please try again.");
       }
 
       const payload = {
         farmerId: user?.id.replace(/^user_/, "fam_"),
-        ...formData,
+        title: formData.title,
+        wasteType: formData.wasteType,
+        wasteProduct: formData.wasteProduct,
+        quantity: formData.quantity,
+        moisture: formData.moisture,
+        price: formData.price,
+        description: formData.description,
+        seller: formData.seller,
+        address: formData.address,
         imageUrl: uploadData.url,
       };
 
-      const res = await fetch("/api/waste/list", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      const res = await axios.post("/api/waste/list", payload);
 
-      if (res.ok) {
-        router.push("/?success=waste-listed");
+      if (res.status >= 200 && res.status < 300) {
+        toast.success("Waste listed successfully!");
+        router.push("/profile/farmer/my-listing");
       } else {
-        throw new Error("Failed to list waste");
+        toast.error("Failed to list waste. Please try again.");
       }
     } catch {
       setErrors({ submit: "Something went wrong. Please try again." });

@@ -5,12 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -35,35 +30,10 @@ import {
   Package,
 } from "lucide-react";
 import Image from "next/image";
-
-type WasteType = "crop" | "fruit" | "vegetable";
-
-interface WasteItem {
-  _id: string;
-  title: string;
-  wasteType: WasteType;
-  wasteProduct: string;
-  quantity: string;
-  moisture: string;
-  price: string;
-  location: string;
-  description: string;
-  imageUrl: string;
-  seller: {
-    name: string;
-    phone: string;
-    email: string;
-  };
-}
-
-interface FilterState {
-  search: string;
-  category: string;
-  location: string;
-  minPrice: string;
-  maxPrice: string;
-  sortBy: string;
-}
+import { toast } from "sonner";
+import { WasteType } from "@/components/types/ListWaste";
+import { FilterState, WasteItem } from "@/components/types/marketplace";
+import axios from "axios";
 
 const categoryMeta: Record<
   WasteType,
@@ -94,7 +64,7 @@ export default function Marketplace() {
   const [filters, setFilters] = useState<FilterState>({
     search: "",
     category: "all",
-    location: "",
+    address: "",
     minPrice: "",
     maxPrice: "",
     sortBy: "recent",
@@ -106,10 +76,10 @@ export default function Marketplace() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const res = await fetch("/api/waste/get");
-        if (res.ok) {
-          const data = await res.json();
-          setWastes(data.wastedata || []);
+        const res = await axios.get("/api/waste/get");
+        if (res.data) {
+          const data = await res.data.wastedata;
+          setWastes(data || []);
         } else {
           console.error("Failed to fetch waste listings");
         }
@@ -152,9 +122,9 @@ export default function Marketplace() {
       list = list.filter((p) => p.wasteType === filters.category);
     }
 
-    if (filters.location.trim()) {
-      const locq = filters.location.toLowerCase();
-      list = list.filter((p) => p.location.toLowerCase().includes(locq));
+    if (filters.address.trim()) {
+      const locq = filters.address.toLowerCase();
+      list = list.filter((p) => p.address.village.toLowerCase().includes(locq));
     }
 
     const min = filters.minPrice ? Number(filters.minPrice) : undefined;
@@ -177,7 +147,7 @@ export default function Marketplace() {
   }, [wastes, filters]);
 
   const handleAddToCart = (item: WasteItem) => {
-    alert(`Added to cart: ${item.title}`);
+    toast.success(`${item.title} added to cart!`);
   };
 
   const handleFilterChange = (key: keyof FilterState, value: string) => {
@@ -188,7 +158,7 @@ export default function Marketplace() {
     setFilters({
       search: "",
       category: "all",
-      location: "",
+      address: "",
       minPrice: "",
       maxPrice: "",
       sortBy: "recent",
@@ -336,9 +306,9 @@ export default function Marketplace() {
                 </Label>
                 <Input
                   placeholder="City / District"
-                  value={filters.location}
+                  value={filters.address}
                   onChange={(e) =>
-                    handleFilterChange("location", e.target.value)
+                    handleFilterChange("address", e.target.value)
                   }
                   className="h-10 border-gray-200 focus:border-green-500"
                 />
@@ -436,6 +406,8 @@ export default function Marketplace() {
                         src={p.imageUrl}
                         alt={p.title}
                         fill
+                        priority
+                        sizes="auto"
                         className="object-cover group-hover:scale-105 transition-transform duration-300"
                       />
                     ) : (
@@ -483,7 +455,9 @@ export default function Marketplace() {
                     {/* Location */}
                     <div className="flex items-center gap-1 text-xs text-gray-600">
                       <MapPin className="h-3 w-3 text-gray-400 flex-shrink-0" />
-                      <span className="line-clamp-1">{p.location}</span>
+                      <span className="line-clamp-1">
+                        {p.address.district.toString()}
+                      </span>
                     </div>
 
                     {/* Info Row */}

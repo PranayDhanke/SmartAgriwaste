@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Leaf, Recycle, Users, Globe } from "lucide-react"
+import Link from "next/link"
 
 export default function About() {
   return (
@@ -115,11 +116,11 @@ export default function About() {
             be a part of the change. Explore processes, trade resources, 
             and help build a greener tomorrow.
           </p>
-          <a href="/marketplace">
+          <Link href="/marketplace">
             <button className="rounded-xl bg-green-600 px-6 py-3 text-white hover:bg-green-700">
               Explore Marketplace
             </button>
-          </a>
+          </Link>
         </section>
       </div>
     </main>
