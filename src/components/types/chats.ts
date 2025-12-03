@@ -3,12 +3,12 @@ export interface Chat {
   userId: string;
   username: string;
   message: string;
-}
+} 
 
 export interface Chats {
-  messageId: string;
+  _id: string;
   userId: string;
   username: string;
   message: string;
-  timestamp?: string;
+  createdAt: string;
 }

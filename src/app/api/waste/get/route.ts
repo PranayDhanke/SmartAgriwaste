@@ -9,7 +9,7 @@ export async function GET() {
     const wastedata = await Waste.find({});
 
     return NextResponse.json({ wastedata }, { status: 200 });
-  } catch (error) {
+  } catch (error) {               
     console.log(error);
     return NextResponse.json(
       { error: "Failed to fetch waste listings" },

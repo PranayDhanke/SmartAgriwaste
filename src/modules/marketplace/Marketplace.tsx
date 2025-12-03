@@ -79,7 +79,7 @@ export default function Marketplace() {
         const res = await axios.get("/api/waste/get");
         if (res.data) {
           const data = await res.data.wastedata;
-          setWastes(data || []);
+          setWastes(data);
         } else {
           console.error("Failed to fetch waste listings");
         }
