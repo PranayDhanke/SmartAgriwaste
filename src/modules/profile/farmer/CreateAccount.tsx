@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -76,6 +76,13 @@ export default function CreateAccount() {
     farmArea: "",
     farmUnit: "hectare",
   });
+
+  const role = user?.unsafeMetadata.role;
+  useEffect(() => {
+    if (role === "buyer") {
+      router.replace(`/create-account/buyer`);
+    }
+  }, [role]);
 
   // Validation rules
   const validateField = (name: string, value: string | File | null) => {
@@ -290,7 +297,7 @@ export default function CreateAccount() {
 
     // basic validation
     if (!res.data || !res.data.url) {
-      throw new Error(`Failed to upload ${folder}`);  
+      throw new Error(`Failed to upload ${folder}`);
     }
 
     return res.data.url; // <-- no await needed

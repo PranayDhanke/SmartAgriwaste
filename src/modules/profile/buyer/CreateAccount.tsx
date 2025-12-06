@@ -1,7 +1,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -55,6 +55,13 @@ export default function CreateAccount() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+
+  const role = user?.unsafeMetadata.role;
+  useEffect(() => {
+    if (role === "farmer") {
+      router.replace(`/create-account/farmer`);
+    }
+  }, [role]);
 
   const [form, setForm] = useState({
     phone: "",

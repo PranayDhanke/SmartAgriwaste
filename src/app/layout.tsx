@@ -6,6 +6,7 @@ import Footer from "@/modules/Home/Footer";
 
 import { ClerkProvider } from "@clerk/nextjs";
 import { Toaster } from "@/components/ui/sonner";
+import RedirectNotAccount from "@/modules/Extra/RedirectNotAccount";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +38,7 @@ export default function RootLayout({
           <Header />
           {children}
           <Footer />
+          <RedirectNotAccount />
         </body>
       </html>
     </ClerkProvider>

@@ -7,7 +7,7 @@ export interface Chat {
 
 export interface Chats {
   _id: string;
-  userId: string;
+  userid: string;
   username: string;
   message: string;
   createdAt: string;

@@ -18,7 +18,7 @@ export default function Page() {
         path="/sign-up"
         routing="path"
         // pass role explicitly as query param so create-account can always read it
-        afterSignUpUrl={`/create-account`}
+        afterSignUpUrl={`/create-accoucnt`}
         signInUrl="/sign-in"
       />
     </div>

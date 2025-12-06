@@ -27,7 +27,7 @@ export default function Discussion() {
   const scrollAnchorRef = useRef<HTMLDivElement | null>(null);
   const mountedRef = useRef(true);
 
-  const userId = user?.id ?? "";
+  const userid = user?.id;
   const username =
     user?.fullName ||
     user?.username ||
@@ -43,7 +43,6 @@ export default function Discussion() {
 
   // Connect socket once Clerk user loader is ready. We guard so we only attempt once.
   useEffect(() => {
-    // wait until Clerk has loaded (not necessarily authenticated)
     if (!isLoaded) return;
 
     setLoading(true);
@@ -59,12 +58,10 @@ export default function Discussion() {
     const onConnect = () => {
       setIsConnected(true);
       setReconnects(0);
-      // ask server for the room history
       socket.emit("join-room");
     };
     const onDisconnect = () => {
       setIsConnected(false);
-      // show a small toast only if mounted so we don't spam on unmount
       if (mountedRef.current) toast.error("Disconnected from chat.");
     };
 
@@ -78,17 +75,19 @@ export default function Discussion() {
 
     socket.on("history", (history: Chats[]) => {
       if (!mountedRef.current) return;
+
       if (Array.isArray(history)) {
         setMessages(history.map(normalizeServerMessage));
-        // scroll after DOM update
         setTimeout(() => scrollToBottom(true), 60);
       }
       setLoading(false);
     });
 
+    // NEW: dedupe/replace temp when receiving server message
     socket.on("receive-message", (msg: Chats) => {
       if (!mountedRef.current) return;
-      setMessages((prev) => [...prev, normalizeServerMessage(msg)]);
+      const normalized = normalizeServerMessage(msg);
+      replaceTempOrAppend(normalized);
       setTimeout(() => scrollToBottom(), 40);
     });
 
@@ -126,11 +125,57 @@ export default function Discussion() {
   function normalizeServerMessage(msg: Chats): Chats {
     return {
       _id: msg._id ?? String(Math.random()),
-      message: msg.message ?? "",
-      username: msg.username ?? "User",
-      userId: msg.userId ?? null,
+      message: msg.message,
+      username: msg.username,
+      userid: msg.userid,
       createdAt: msg.createdAt ?? new Date().toISOString(),
     } as Chats;
+  }
+
+  // Replace a matching temp message (by userid + text + nearby time) OR append
+  function replaceTempOrAppend(incoming: Chats) {
+    setMessages((prev) => {
+      // try to find a temp message that looks like this incoming message
+      const now = new Date(incoming.createdAt).getTime();
+      const tempIndex = prev.findIndex((m) => {
+        // temp ids are those we create client-side starting with "temp-"
+        const isTemp = typeof m._id === "string" && m._id.startsWith("temp-");
+        if (!isTemp) return false;
+        if (m.userid !== incoming.userid) return false;
+        if (String(m.message).trim() !== String(incoming.message).trim()) return false;
+
+        // if temp has createdAt, compare closeness
+        const tempTime = new Date(m.createdAt ?? Date.now()).getTime();
+        const delta = Math.abs(now - tempTime);
+        // within 7 seconds -> consider same message
+        return delta < 7000;
+      });
+
+      if (tempIndex !== -1) {
+        // replace the temp with the incoming saved message
+        const copy = [...prev];
+        copy[tempIndex] = incoming;
+        return copy;
+      }
+
+      // no temp found -> check for duplicates by server _id (rare) or message+user+time
+      const alreadyExists = prev.some((m) => {
+        if (m._id && incoming._id && m._id === incoming._id) return true;
+        if (m.userid === incoming.userid && String(m.message).trim() === String(incoming.message).trim()) {
+          const mTime = new Date(m.createdAt ?? 0).getTime();
+          const inTime = new Date(incoming.createdAt ?? 0).getTime();
+          return Math.abs(mTime - inTime) < 7000;
+        }
+        return false;
+      });
+
+      if (alreadyExists) {
+        // don't append duplicate
+        return prev;
+      }
+
+      return [...prev, incoming];
+    });
   }
 
   function scrollToBottom(immediate = false) {
@@ -158,34 +203,19 @@ export default function Discussion() {
     const payload = {
       message: messageText,
       username: username,
-      userid: userId,
+      userid: userid,
     };
 
     try {
-      // optimistic UI: push a temporary message to show immediate feedback
-      const tempMessage: Chats = {
-        _id: `temp-${Date.now()}`,
-        message: messageText,
-        username: username,
-        userId: userId,
-        createdAt: new Date().toISOString(),
-      };
-      setMessages((prev) => [...prev, tempMessage]);
-      scrollToBottom();
-
+      // optimistic UI: push a temporary message to show immediate feedback 
       socketRef.current?.emit(
         "send-message",
         payload,
-        (ack: { saved: Chats }) => {
-          // optional ack handling (server may send back saved message)
+        (ack: { saved?: Chats } | undefined) => {
+          // If server responds with an ack containing the saved message, replace temp with saved.
           if (ack && ack.saved) {
-            // replace temp message with official one when server contains _id
-            setMessages((prev) => {
-              const withoutTemp = prev.filter(
-                (m) => !m._id?.toString().startsWith("temp-")
-              );
-              return [...withoutTemp, normalizeServerMessage(ack.saved)];
-            });
+            const saved = normalizeServerMessage(ack.saved);
+            replaceTempOrAppend(saved);
           }
         }
       );
@@ -273,29 +303,26 @@ export default function Discussion() {
                 <h3 className="text-xl font-semibold text-gray-700 mb-2">
                   No messages yet
                 </h3>
-                <p className="text-gray-500">
-                  Be the first to start the conversation!
-                </p>
+                <p className="text-gray-500">Be the first to start the conversation!</p>
               </div>
             ) : (
               <div className="space-y-2">
                 {messages.map((msg, index) => {
-                  const isOwn = msg.userId === userId;
+                  const isOwn = msg.userid === userid;
                   const showAvatar =
-                    index === 0 || messages[index - 1].userId !== msg.userId;
+                    index === 0 || messages[index - 1].userid !== msg.userid;
                   const showName = !isOwn && showAvatar;
 
                   return (
                     <div
                       key={msg._id}
-                      className={`flex items-end gap-2 ${
-                        isOwn ? "flex-row-reverse" : "flex-row"
-                      } ${showAvatar ? "mt-4" : "mt-1"}`}
+                      className={`flex items-end gap-2 ${isOwn ? "flex-row-reverse" : "flex-row"
+                        } ${showAvatar ? "mt-4" : "mt-1"}`}
                     >
                       {showAvatar && !isOwn ? (
                         <Avatar className="h-9 w-9 ring-2 ring-white shadow-md">
                           <AvatarImage />
-                          <AvatarFallback className="bg-gradient-to-br from-emerald-500 to-teal-500 text-white text-xs font-semibold">
+                          <AvatarFallback className="bg-gradient-to-br from-emerld-500 to-teal-500 text-white text-xs font-semibold">
                             {msg.username?.charAt(0)?.toUpperCase() ?? "U"}
                           </AvatarFallback>
                         </Avatar>
@@ -304,9 +331,8 @@ export default function Discussion() {
                       ) : null}
 
                       <div
-                        className={`flex flex-col max-w-[70%] ${
-                          isOwn ? "items-end" : "items-start"
-                        }`}
+                        className={`flex flex-col max-w-[70%] ${isOwn ? "items-end" : "items-start"
+                          }`}
                       >
                         {showName && (
                           <span className="text-xs font-semibold text-gray-600 mb-1 px-3">
@@ -314,11 +340,10 @@ export default function Discussion() {
                           </span>
                         )}
                         <div
-                          className={`px-4 py-2.5 rounded-2xl shadow-md transition-all hover:shadow-lg ${
-                            isOwn
-                              ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-br-sm"
-                              : "bg-white text-gray-800 rounded-bl-sm"
-                          }`}
+                          className={`px-4 py-2.5 rounded-2xl shadow-md transition-all hover:shadow-lg ${isOwn
+                            ? "bg-gradient-to-br from-emerald-500 to-teal-600 text-white rounded-br-sm"
+                            : "bg-white text-gray-800 rounded-bl-sm"
+                            }`}
                         >
                           <p className="text-sm leading-relaxed break-words whitespace-pre-wrap">
                             {msg.message}
@@ -349,9 +374,7 @@ export default function Discussion() {
                     }
                   }}
                   placeholder={
-                    isConnected
-                      ? "Type a message..."
-                      : "Can't send while offline"
+                    isConnected ? "Type a message..." : "Can't send while offline"
                   }
                   disabled={isSending || !isConnected}
                   className="w-full bg-gray-100 border-0 focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-full px-6 py-3 h-12 text-sm placeholder:text-gray-500"
@@ -371,11 +394,7 @@ export default function Discussion() {
                   className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 rounded-full h-12 w-12 p-0 shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
                   aria-label="send message"
                 >
-                  {isSending ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
+                  {isSending ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
                 </Button>
               )}
             </div>

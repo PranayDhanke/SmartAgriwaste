@@ -12,10 +12,13 @@ import {
   PackagePlus,
   TrendingUp,
 } from "lucide-react";
+import { useEffect } from "react";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 export default function Home() {
   const { isSignedIn, user } = useUser();
-  const role = user?.unsafeMetadata?.role || "farmer"; // "farmer" or "buyer"
+  const role = user?.unsafeMetadata?.role || "user";
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-green-50 to-white">

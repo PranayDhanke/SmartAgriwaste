@@ -43,7 +43,7 @@ const Header = () => {
   const { signOut, openUserProfile } = useClerk();
   const [isOpen, setIsOpen] = useState(false);
 
-  const role = user?.unsafeMetadata?.role || "farmer"; // "farmer" or "buyer"
+  const role = user?.unsafeMetadata?.role || "user"; // "farmer" or "buyer"
 
   // Farmer Navigation
   const farmerNav = [
