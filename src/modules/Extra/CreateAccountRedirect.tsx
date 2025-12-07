@@ -17,7 +17,7 @@ const CreateAccountRedirect = () => {
     } else {
       router.push(`/create-account/${role}`);
     }
-  }, [clerkRole]);
+  }, [clerkRole , router]);
   return <div className="h-screen animate-collapsible-up">loading...</div>;
 };
 

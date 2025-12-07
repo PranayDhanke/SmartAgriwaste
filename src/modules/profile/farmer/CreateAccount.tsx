@@ -82,7 +82,7 @@ export default function CreateAccount() {
     if (role === "buyer") {
       router.replace(`/create-account/buyer`);
     }
-  }, [role]);
+  }, [role , router]);
 
   // Validation rules
   const validateField = (name: string, value: string | File | null) => {

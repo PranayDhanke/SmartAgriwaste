@@ -118,8 +118,7 @@ export default function Discussion() {
       }
       socketRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoaded]);
+     }, [isLoaded]);
 
   // helper to normalize message shape from server -> Chats
   function normalizeServerMessage(msg: Chats): Chats {

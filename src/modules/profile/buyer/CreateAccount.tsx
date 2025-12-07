@@ -61,7 +61,7 @@ export default function CreateAccount() {
     if (role === "farmer") {
       router.replace(`/create-account/farmer`);
     }
-  }, [role]);
+  }, [role , router]);
 
   const [form, setForm] = useState({
     phone: "",

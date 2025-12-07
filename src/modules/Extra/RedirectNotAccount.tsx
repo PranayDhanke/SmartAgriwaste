@@ -35,7 +35,7 @@ const RedirectNotAccount = () => {
     };
 
     checkAccount();
-  }, [role]);
+  }, [role , router , user]);
   return "";
 };
 
