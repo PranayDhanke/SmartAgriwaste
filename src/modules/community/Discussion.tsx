@@ -9,8 +9,9 @@ import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Send, Loader2, WifiOff, Wifi } from "lucide-react";
 import { Chats } from "@/components/types/chats";
-import Link from "next/link";
+
 import { toast } from "sonner";
+import Link from "next/link";
 
 const SOCKET_URL = "https://smartagriwastesocketserver.onrender.com/"; // replace with your server URL
 
